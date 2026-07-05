@@ -1,16 +1,6 @@
 import React, { useState } from 'react';
 import { X, UserPlus } from 'lucide-react';
-
-export interface Employee {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  department: string;
-  status: 'Active' | 'On Leave' | 'Terminated';
-  salary: string;
-  joinDate: string;
-}
+import type { Employee } from '../../types';
 
 interface AddEmployeeModalProps {
   isOpen: boolean;

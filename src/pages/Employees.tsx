@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { EmployeeTable } from '../components/dashboard/EmployeeTable';
 import { AddEmployeeModal } from '../components/common/AddEmployeeModal';
-import type { Employee } from '../components/common/AddEmployeeModal';
+import type { Employee } from '../types';
 
 interface EmployeesProps {
   employees: Employee[];

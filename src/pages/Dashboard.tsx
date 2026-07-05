@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StatsCard } from '../components/dashboard/StatsCard';
 import { EmployeeTable } from '../components/dashboard/EmployeeTable';
 import { AddEmployeeModal } from '../components/common/AddEmployeeModal';
-import type { Employee } from '../components/common/AddEmployeeModal';
+import type { Employee } from '../types';
 import { Users, DollarSign, Briefcase, Award, ShieldAlert } from 'lucide-react';
 
 interface DashboardProps {

@@ -1,6 +1,19 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Building2, Settings, ShieldAlert, Award, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  Users,
+  Building2,
+  Settings,
+  ShieldAlert,
+  Award,
+  PanelLeftClose,
+  PanelLeftOpen,
+  CalendarCheck,
+  BarChart4,
+  LogOut,
+} from 'lucide-react';
+import { authService } from '../../services/authService';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -9,14 +22,22 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="w-5 h-5 shrink-0" /> },
     { id: 'employees', label: 'Employees', path: '/employees', icon: <Users className="w-5 h-5 shrink-0" /> },
+    { id: 'attendance', label: 'Attendance', path: '/attendance', icon: <CalendarCheck className="w-5 h-5 shrink-0" /> },
+    { id: 'reports', label: 'Reports & Analytics', path: '/reports', icon: <BarChart4 className="w-5 h-5 shrink-0" /> },
     { id: 'departments', label: 'Departments', path: '/departments', icon: <Building2 className="w-5 h-5 shrink-0" /> },
     { id: 'roles', label: 'Roles & Access', path: '/roles', icon: <ShieldAlert className="w-5 h-5 shrink-0" /> },
     { id: 'settings', label: 'Settings', path: '/settings', icon: <Settings className="w-5 h-5 shrink-0" /> },
   ];
+
+  const handleLogout = () => {
+    authService.logout();
+    navigate('/login');
+  };
 
   return (
     <aside
@@ -78,20 +99,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed })
         })}
       </nav>
 
-      {/* Footer Info */}
-      <div className={`p-4 border-t border-brand-border bg-brand-code/30 ${isCollapsed ? 'flex justify-center' : ''}`}>
-        <div className="flex items-center gap-3 overflow-hidden">
-          <div className="w-10 h-10 rounded-full bg-brand-accent-bg border border-brand-accent-border flex items-center justify-center font-bold text-brand-accent shrink-0">
-            AD
-          </div>
-          {!isCollapsed && (
-            <div className="flex-1 overflow-hidden transition-opacity duration-300">
-              <h4 className="text-xs font-semibold text-brand-heading truncate">Admin User</h4>
-              <p className="text-[10px] text-brand-text truncate">admin@ems-enterprise.com</p>
+      {/* Footer Info & Logout */}
+      <div className="p-4 border-t border-brand-border bg-brand-code/30">
+        <div className={`flex items-center justify-between gap-3 overflow-hidden ${isCollapsed ? 'flex-col gap-4' : ''}`}>
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-brand-accent-bg border border-brand-accent-border flex items-center justify-center font-bold text-brand-accent shrink-0 text-sm">
+              AD
             </div>
-          )}
+            {!isCollapsed && (
+              <div className="flex-1 overflow-hidden transition-opacity duration-300">
+                <h4 className="text-xs font-semibold text-brand-heading truncate">Admin User</h4>
+                <p className="text-[10px] text-brand-text truncate">admin@ems.com</p>
+              </div>
+            )}
+          </div>
+          
+          <button
+            onClick={handleLogout}
+            className={`p-2 rounded-xl text-brand-text hover:text-red-500 hover:bg-red-500/10 transition-all duration-200 cursor-pointer`}
+            title="Log Out Session"
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+          </button>
         </div>
       </div>
     </aside>
   );
 };
+
+export default Sidebar;

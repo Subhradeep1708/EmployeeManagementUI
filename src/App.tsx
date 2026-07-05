@@ -7,7 +7,11 @@ import { Employees } from './pages/Employees';
 import { Departments } from './pages/Departments';
 import { Roles } from './pages/Roles';
 import { Settings } from './pages/Settings';
-import type { Employee } from './components/common/AddEmployeeModal';
+import { Attendance } from './pages/Attendance';
+import { Reports } from './pages/Reports';
+import { Login } from './pages/Login';
+import { ProtectedRoute } from './components/common/ProtectedRoute';
+import type { Employee } from './types';
 
 const INITIAL_EMPLOYEES: Employee[] = [
   {
@@ -93,7 +97,11 @@ export function AppInner() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<Layout />}>
+        {/* Unprotected Login route */}
+        <Route path="/login" element={<Login />} />
+
+        {/* Protected Dashboard Workspace routes */}
+        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route
             path="/dashboard"
@@ -114,6 +122,14 @@ export function AppInner() {
                 onAdd={handleAddEmployee}
               />
             }
+          />
+          <Route
+            path="/attendance"
+            element={<Attendance employees={employees} />}
+          />
+          <Route
+            path="/reports"
+            element={<Reports employees={employees} />}
           />
           <Route path="/departments" element={<Departments />} />
           <Route path="/roles" element={<Roles />} />

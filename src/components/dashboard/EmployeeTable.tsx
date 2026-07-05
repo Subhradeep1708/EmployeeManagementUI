@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Employee } from '../common/AddEmployeeModal';
+import type { Employee } from '../../types';
 import { Search, Filter, Trash2, Edit3, UserPlus, SlidersHorizontal } from 'lucide-react';
 
 interface EmployeeTableProps {

@@ -12,6 +12,10 @@ export const Header: React.FC = () => {
         return 'Dashboard Overview';
       case '/employees':
         return 'Employee Directory';
+      case '/attendance':
+        return 'Attendance Tracking';
+      case '/reports':
+        return 'Reports & Analytics';
       case '/departments':
         return 'Departments & Structure';
       case '/roles':
