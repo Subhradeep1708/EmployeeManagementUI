@@ -269,7 +269,7 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
                   disabled={loading}
                   value={formData.firstName}
                   onChange={handleChange}
-                  placeholder="e.g. Subhradeep"
+                  placeholder="e.g. John"
                   className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
                     errors.firstName ? 'border-red-500' : 'border-brand-border'
                   }`}
@@ -286,7 +286,7 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
                   disabled={loading}
                   value={formData.lastName}
                   onChange={handleChange}
-                  placeholder="e.g. Sardar"
+                  placeholder="e.g. Doe"
                   className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
                     errors.lastName ? 'border-red-500' : 'border-brand-border'
                   }`}
@@ -303,7 +303,7 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
                   disabled={loading}
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="subhradeep@gmail.com"
+                  placeholder="john@gmail.com"
                   className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
                     errors.email ? 'border-red-500' : 'border-brand-border'
                   }`}
@@ -320,7 +320,7 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
                   disabled={loading}
                   value={formData.phone}
                   onChange={handleChange}
-                  placeholder="e.g. 9876543210"
+                  placeholder="e.g. 9876000001"
                   className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
                     errors.phone ? 'border-red-500' : 'border-brand-border'
                   }`}
