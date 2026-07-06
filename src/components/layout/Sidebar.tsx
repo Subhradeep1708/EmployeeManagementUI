@@ -29,9 +29,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed })
     { id: 'employees', label: 'Employees', path: '/employees', icon: <Users className="w-5 h-5 shrink-0" /> },
     { id: 'attendance', label: 'Attendance', path: '/attendance', icon: <CalendarCheck className="w-5 h-5 shrink-0" /> },
     { id: 'reports', label: 'Reports & Analytics', path: '/reports', icon: <BarChart4 className="w-5 h-5 shrink-0" /> },
-    { id: 'departments', label: 'Departments', path: '/departments', icon: <Building2 className="w-5 h-5 shrink-0" /> },
-    { id: 'roles', label: 'Roles & Access', path: '/roles', icon: <ShieldAlert className="w-5 h-5 shrink-0" /> },
-    { id: 'settings', label: 'Settings', path: '/settings', icon: <Settings className="w-5 h-5 shrink-0" /> },
+    // { id: 'departments', label: 'Departments', path: '/departments', icon: <Building2 className="w-5 h-5 shrink-0" /> },
+    // { id: 'roles', label: 'Roles & Access', path: '/roles', icon: <ShieldAlert className="w-5 h-5 shrink-0" /> },
+    // { id: 'settings', label: 'Settings', path: '/settings', icon: <Settings className="w-5 h-5 shrink-0" /> },
   ];
 
   const handleLogout = () => {

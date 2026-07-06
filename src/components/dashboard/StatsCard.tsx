@@ -13,8 +13,6 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   title,
   value,
   icon,
-  trend,
-  trendType = 'positive',
   color = 'purple',
 }) => {
   const getColorStyles = () => {

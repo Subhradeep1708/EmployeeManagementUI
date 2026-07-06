@@ -1,13 +1,26 @@
-// import { apiFetch } from './api';
+import { apiFetch } from './api';
 import type { Employee } from '../types';
 
 export const employeeService = {
-  getEmployees: async (): Promise<Employee[]> => {
-    // API Integration:
-    // return apiFetch<Employee[]>('/employees');
-    
-    throw new Error('Connect ASP.NET Web API endpoint GET /api/employees');
-  },
+  getEmployees: async (
+        page = 1,
+        pageSize = 10,
+        search?: string,
+        departmentId?: number,
+        statusId?: number
+    ) => {
+
+        return apiFetch("/Employees/get-employees", {
+            params: {
+                page: page.toString(),
+                pageSize: pageSize.toString(),
+                ...(search ? { search } : {}),
+                ...(departmentId ? { departmentId: departmentId.toString() } : {}),
+                ...(statusId ? { statusId: statusId.toString() } : {})
+            }
+        });
+
+    },
 
   getEmployeeById: async (_id: number): Promise<Employee> => {
     // API Integration:

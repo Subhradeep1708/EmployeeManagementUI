@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import type { Employee } from '../../types';
 import { Search, Filter, Trash2, Edit3, UserPlus, SlidersHorizontal } from 'lucide-react';
+import { employeeService } from "../../services/employeeService";
+import { useEffect } from "react";
 
 interface EmployeeTableProps {
   employees: Employee[];
@@ -9,28 +11,38 @@ interface EmployeeTableProps {
 }
 
 export const EmployeeTable: React.FC<EmployeeTableProps> = ({
-  employees,
   onDelete,
   onOpenAddModal,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDept, setSelectedDept] = useState('All');
-  const [selectedStatus, setSelectedStatus] = useState('All');
+  const [selectedDept, setSelectedDept] = useState(0);
 
-  const departments = ['All', 'Engineering', 'Product', 'Design', 'Marketing', 'Sales', 'Human Resources'];
-  const statuses = ['All', 'Active', 'On Leave', 'Terminated'];
+  const [selectedStatus, setSelectedStatus] = useState(0);
 
-  const filteredEmployees = employees.filter((emp) => {
-    const matchesSearch =
-      emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.role.toLowerCase().includes(searchTerm.toLowerCase());
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
 
-    const matchesDept = selectedDept === 'All' || emp.department === selectedDept;
-    const matchesStatus = selectedStatus === 'All' || emp.status === selectedStatus;
+  const [searchInput, setSearchInput] = useState("");
 
-    return matchesSearch && matchesDept && matchesStatus;
-  });
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const departments = [
+    { id: 0, name: "All" },
+    { id: 1, name: "Information Technology" },
+    { id: 2, name: "Human Resources" },
+    { id: 3, name: "Finance" },
+    { id: 4, name: "Marketing" }
+  ];
+  const statuses = [
+    { id: 0, name: "All" },
+    { id: 1, name: "Active" },
+    { id: 2, name: "On Leave" },
+    { id: 3, name: "Resigned" },
+    { id: 4, name: "Terminated" }
+  ];
+
+
 
   const getStatusBadge = (status: Employee['status']) => {
     switch (status) {
@@ -50,10 +62,52 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
     if (isNaN(num)) return salaryStr;
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'INR',
       maximumFractionDigits: 0,
     }).format(num);
   };
+
+
+
+  useEffect(() => {
+
+    const timer = setTimeout(() => {
+      setSearchTerm(searchInput);
+    }, 100);
+
+    return () => clearTimeout(timer);
+
+  }, [searchInput]);
+
+  useEffect(() => {
+  const loadEmployees = async () => {
+    try {
+
+      const response = await employeeService.getEmployees(
+        page,
+        5,
+        searchTerm,
+        selectedDept === 0 ? undefined : selectedDept,
+        selectedStatus === 0 ? undefined : selectedStatus
+      );
+
+      console.log(response.data);
+      
+      setEmployees(response.data.items);
+      setTotalPages(response.data.totalPages);
+      setTotalRecords(response.data.totalRecords);
+
+    }
+    catch (err) {
+      console.error(err);
+    }
+  };
+
+    loadEmployees();
+  }, [page,
+    searchTerm,
+    selectedDept,
+    selectedStatus]);
 
   return (
     <div className="bg-brand-bg border border-brand-border rounded-2xl shadow-sm overflow-hidden transition-all duration-300">
@@ -69,7 +123,7 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
               type="text"
               placeholder="Search employees name, role..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="w-full text-xs pl-10 pr-4 py-2.5 rounded-xl bg-brand-bg border border-brand-border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200"
             />
           </div>
@@ -78,14 +132,18 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
           <div className="relative">
             <select
               value={selectedDept}
-              onChange={(e) => setSelectedDept(e.target.value)}
+              onChange={(e) => setSelectedDept(Number(e.target.value))}
               className="text-xs pl-3 pr-8 py-2.5 rounded-xl bg-brand-bg border border-brand-border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 cursor-pointer appearance-none min-w-[140px]"
+
             >
-              {departments.map((dept) => (
-                <option key={dept} value={dept}>
-                  {dept} Department
+              {departments.map((dept) =>
+                <option
+                  key={dept.id}
+                  value={dept.id}
+                >
+                  {dept.name}
                 </option>
-              ))}
+              )}
             </select>
             <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-brand-text/60">
               <Filter className="w-3 h-3" />
@@ -99,15 +157,15 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
           <div className="flex bg-brand-code/50 border border-brand-border p-1 rounded-xl">
             {statuses.map((status) => (
               <button
-                key={status}
-                onClick={() => setSelectedStatus(status)}
+                key={status.id}
+                onClick={() => setSelectedStatus(status.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
-                  selectedStatus === status
+                  selectedStatus === status.id
                     ? 'bg-brand-bg text-brand-accent shadow-sm'
                     : 'text-brand-text hover:text-brand-heading'
                 }`}
               >
-                {status}
+                {status.name}
               </button>
             ))}
           </div>
@@ -137,28 +195,28 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-brand-border">
-            {filteredEmployees.length > 0 ? (
-              filteredEmployees.map((emp) => (
+            {employees.length > 0 ? (
+              employees.map((emp) => (
                 <tr
-                  key={emp.id}
+                  key={emp.employeeId}
                   className="hover:bg-brand-code/20 transition-colors duration-150 text-sm group"
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center font-bold text-brand-accent text-sm">
-                        {emp.name.split(' ').map((n) => n[0]).join('')}
+                        {emp.fullName.split(' ').map((n) => n[0]).join('')}
                       </div>
                       <div>
                         <h4 className="font-semibold text-brand-heading group-hover:text-brand-accent transition-colors duration-150">
-                          {emp.name}
+                          {emp.fullName}
                         </h4>
                         <p className="text-xs text-brand-text">{emp.email}</p>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-brand-text font-medium">{emp.department}</td>
-                  <td className="px-6 py-4 text-brand-text font-medium">{emp.role}</td>
-                  <td className="px-6 py-4 text-brand-heading font-semibold">{formatSalary(emp.salary)}</td>
+                  <td className="px-6 py-4 text-brand-text font-medium">{emp.designation}</td>
+                  <td className="px-6 py-4 text-brand-heading font-semibold">{emp.salary}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusBadge(emp.status)}`}>
                       {emp.status}
@@ -174,7 +232,7 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
                       </button>
                       <button
                         title="Delete Employee"
-                        onClick={() => onDelete(emp.id)}
+                        onClick={() => onDelete(emp.employeeId  )}
                         className="p-1.5 rounded-lg text-brand-text hover:text-red-500 hover:bg-red-500/10 transition-all duration-150 cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -199,8 +257,32 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
 
       {/* Footer statistics */}
       <div className="p-4 border-t border-brand-border flex items-center justify-between text-xs text-brand-text bg-brand-code/10">
-        <span>Showing {filteredEmployees.length} of {employees.length} employees</span>
-        <span className="font-medium">Total payroll: {formatSalary(String(filteredEmployees.reduce((acc, emp) => acc + Number(emp.salary), 0)))}</span>
+        <span>Showing {employees.length} of {totalRecords} employees</span>
+        <span className="font-medium">Total payroll: {formatSalary(String(employees.reduce((acc, emp) => acc + Number(emp.salary), 0)))}</span>
+      </div>
+
+      <div className="flex items-center justify-end gap-4 p-4">
+
+        <button
+          disabled={page === 1}
+          onClick={() => setPage(page - 1)}
+          className="px-4 py-2 rounded border"
+        >
+          Previous
+        </button>
+
+        <span>
+          {page} / {totalPages}
+        </span>
+
+        <button
+          disabled={page === totalPages}
+          onClick={() => setPage(page + 1)}
+          className="px-4 py-2 rounded border"
+        >
+          Next
+        </button>
+
       </div>
     </div>
   );

@@ -33,7 +33,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ employees, onDelete, onAdd
       try {
         const response = await dashboardService.getSummary();
         setSummary(response.data);
-        console.log(response.data);
 
       } catch (error) {
         console.error(error);
@@ -89,7 +88,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ employees, onDelete, onAdd
             </span>
           </div>
           <EmployeeTable
-            employees={employees}
+            // employees={employees}
             onDelete={onDelete}
             onOpenAddModal={() => setIsAddModalOpen(true)}
           />

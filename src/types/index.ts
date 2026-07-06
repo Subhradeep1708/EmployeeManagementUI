@@ -1,12 +1,12 @@
 export interface Employee {
-  id: number;
-  name: string;
+  employeeId: number;
+  employeeCode: string;
+  fullName: string;
   email: string;
-  role: string;
+  designation: string;
   department: string;
-  status: 'Active' | 'On Leave' | 'Terminated';
-  salary: string;
-  joinDate: string;
+  status: 'Active' | 'On Leave' | 'Resigned' | 'Terminated';
+  salary: number;
 }
 
 export interface AttendanceRecord {
