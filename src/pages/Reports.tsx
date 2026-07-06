@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Employee } from '../types';
-import { Download, Award, FileText, BarChart3, TrendingUp, Calendar } from 'lucide-react';
+import { Download, Award, FileText, BarChart3, TrendingUp, Calendar, Loader2 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+import { analyticsService, type AnalyticsDashboardData } from '../services/analyticsService';
 
 interface ReportsProps {
   employees: Employee[];
@@ -9,6 +10,8 @@ interface ReportsProps {
 
 export const Reports: React.FC<ReportsProps> = ({ employees }) => {
   const { showToast } = useToast();
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsDashboardData | null>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
   
   // Client-side CSV Exporter helper
   const handleExportCSV = (reportType: 'directory' | 'salary' | 'performance') => {
@@ -17,24 +20,23 @@ export const Reports: React.FC<ReportsProps> = ({ employees }) => {
     let filename = '';
 
     if (reportType === 'directory') {
-      headers = ['Employee ID', 'Name', 'Email', 'Role', 'Department', 'Status', 'Join Date'];
+      headers = ['Employee ID', 'Name', 'Email', 'Role', 'Department', 'Status'];
       rows = employees.map(emp => [
-        String(emp.id),
-        emp.name,
+        String(emp.employeeId),
+        emp.fullName,
         emp.email,
-        emp.role,
+        emp.designation,
         emp.department,
-        emp.status,
-        emp.joinDate
+        emp.status
       ]);
       filename = `employee_directory_${new Date().toISOString().split('T')[0]}.csv`;
     } else if (reportType === 'salary') {
-      headers = ['Employee ID', 'Name', 'Department', 'Annual Salary (USD)'];
+      headers = ['Employee ID', 'Name', 'Department', 'Annual Salary (INR)'];
       rows = employees.map(emp => [
-        String(emp.id),
-        emp.name,
+        String(emp.employeeId),
+        emp.fullName,
         emp.department,
-        emp.salary
+        String(emp.salary)
       ]);
       filename = `payroll_salary_sheet_${new Date().toISOString().split('T')[0]}.csv`;
     } else if (reportType === 'performance') {
@@ -43,7 +45,7 @@ export const Reports: React.FC<ReportsProps> = ({ employees }) => {
         const score = [4.8, 4.2, 4.9, 3.8, 4.5, 3.2][idx % 6];
         const rating = score >= 4.5 ? 'Outstanding' : score >= 4.0 ? 'Exceeds Expectations' : 'Meets Expectations';
         return [
-          emp.name,
+          emp.fullName,
           emp.department,
           rating,
           String(score)
@@ -65,7 +67,6 @@ export const Reports: React.FC<ReportsProps> = ({ employees }) => {
   };
 
   const handleExportPDF = () => {
-    // Print window triggers native Save to PDF
     window.print();
   };
 
@@ -110,20 +111,70 @@ export const Reports: React.FC<ReportsProps> = ({ employees }) => {
     }
   };
 
+  useEffect(() => {
+    const loadAnalytics = async () => {
+      setLoadingAnalytics(true);
+      try {
+        const response = await analyticsService.getDashboardAnalytics();
+        if (response.success && response.data) {
+          setAnalyticsData(response.data);
+        } else {
+          showToast(response.message || 'Failed to retrieve charts metrics.', 'error');
+        }
+      } catch (err: any) {
+        showToast(err.message || 'Failed to query dashboard analytics.', 'error');
+      } finally {
+        setLoadingAnalytics(false);
+      }
+    };
+    void loadAnalytics();
+  }, []);
+
   // Mock Performance List
   const performances = employees.map((emp, idx) => {
     const score = [4.8, 4.2, 4.9, 3.8, 4.5, 3.2][idx % 6];
     const rating = score >= 4.5 ? 'Outstanding' : score >= 4.0 ? 'Exceeds Expectations' : 'Meets Expectations';
     const ratingColor = score >= 4.5 ? 'text-emerald-500' : score >= 4.0 ? 'text-blue-500' : 'text-amber-500';
     return {
-      name: emp.name,
-      role: emp.role,
+      name: emp.fullName,
+      role: emp.designation,
       department: emp.department,
       score,
       rating,
       ratingColor,
     };
   });
+
+  // dynamic chart calculations
+  const hiringTrend = analyticsData?.hiringTrend || [];
+  const maxHired = hiringTrend.length > 0 ? Math.max(...hiringTrend.map(h => h.employeesHired)) : 1;
+
+  const departmentGrowth = analyticsData?.departmentGrowth || [];
+  const maxCount = departmentGrowth.length > 0 ? Math.max(...departmentGrowth.map(d => d.employeeCount)) : 1;
+
+  const points = departmentGrowth.map((d, idx) => {
+    const x = departmentGrowth.length > 1 ? (idx / (departmentGrowth.length - 1)) * 100 : 50;
+    const y = 45 - (d.employeeCount / maxCount) * 35; // leaves padding at top
+    return { x, y };
+  });
+
+  const pathD = points.length > 0 
+    ? `M ${points[0].x} ${points[0].y} ` + points.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ') 
+    : '';
+
+  const areaD = points.length > 0 
+    ? `${pathD} L ${points[points.length - 1].x} 50 L ${points[0].x} 50 Z` 
+    : '';
+
+  const attendancePattern = analyticsData?.attendancePattern || [];
+  const presentItem = attendancePattern.find(a => a.status === 'Present');
+  const absentItem = attendancePattern.find(a => a.status === 'Absent');
+  const presentCount = presentItem ? presentItem.count : 0;
+  const absentCount = absentItem ? absentItem.count : 0;
+  const totalLogs = presentCount + absentCount;
+  
+  const presentPercent = totalLogs > 0 ? Math.round((presentCount / totalLogs) * 100) : 0;
+  const absentPercent = totalLogs > 0 ? Math.round((absentCount / totalLogs) * 100) : 0;
 
   return (
     <div className="space-y-8 print:bg-white print:text-black">
@@ -189,7 +240,7 @@ export const Reports: React.FC<ReportsProps> = ({ employees }) => {
 
       {/* Server Report Generation Section */}
       <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm print:hidden transition-all duration-300 hover:border-brand-accent/40">
-        <h3 className="text-base font-bold text-brand-heading mb-1">Generate Reports</h3>
+        <h3 className="text-base font-bold text-brand-heading mb-1">System Server Reports</h3>
         <p className="text-xs text-brand-text mb-6">Generate live PDF and Excel reports dynamically compiled by the backend server.</p>
         
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -237,119 +288,135 @@ export const Reports: React.FC<ReportsProps> = ({ employees }) => {
         </div>
       </div>
 
-      {/* Analytics Visualization charts (Bonus Features) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:hidden">
-        {/* Hiring Trend Bar Chart */}
-        <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex flex-col h-80 transition-all duration-300 hover:border-brand-accent/40">
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-4 h-4 text-brand-accent" />
-            <h4 className="text-xs font-semibold text-brand-heading uppercase tracking-wider">Hiring Trend Analysis</h4>
-          </div>
-          <div className="flex-1 flex items-end justify-between gap-2 pt-6">
-            {[
-              { month: 'Jan', count: 4, height: '40%' },
-              { month: 'Feb', count: 6, height: '60%' },
-              { month: 'Mar', count: 3, height: '30%' },
-              { month: 'Apr', count: 8, height: '80%' },
-              { month: 'May', count: 5, height: '50%' },
-              { month: 'Jun', count: 10, height: '100%' },
-            ].map((d) => (
-              <div key={d.month} className="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
-                <span className="text-[10px] text-brand-accent font-bold opacity-0 group-hover:opacity-100 transition-opacity">{d.count}</span>
-                <div 
-                  className="w-full bg-brand-accent/15 border-t border-brand-accent rounded-t-lg group-hover:bg-brand-accent transition-colors duration-300"
-                  style={{ height: d.height }}
-                ></div>
-                <span className="text-[10px] text-brand-text font-medium">{d.month}</span>
-              </div>
-            ))}
-          </div>
+      {/* Analytics Visualization charts */}
+      {loadingAnalytics ? (
+        <div className="p-12 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex flex-col items-center justify-center gap-2 text-brand-text h-80">
+          <Loader2 className="w-8 h-8 text-brand-accent animate-spin" />
+          <p className="text-xs font-semibold">Compiling interactive charts...</p>
         </div>
-
-        {/* Department Growth Area Chart */}
-        <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex flex-col h-80 transition-all duration-300 hover:border-emerald-500/40">
-          <div className="flex items-center gap-2 mb-4">
-            <BarChart3 className="w-4 h-4 text-emerald-500" />
-            <h4 className="text-xs font-semibold text-brand-heading uppercase tracking-wider">Department Growth Tracking</h4>
-          </div>
-          <div className="flex-1 flex items-center justify-center relative">
-            {/* Custom SVG line chart */}
-            <svg className="w-full h-full overflow-visible" viewBox="0 0 100 50">
-              <defs>
-                <linearGradient id="growthGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.2"/>
-                  <stop offset="100%" stopColor="#10b981" stopOpacity="0"/>
-                </linearGradient>
-              </defs>
-              <path
-                d="M 0 45 Q 25 35, 50 15 T 100 5 L 100 50 L 0 50 Z"
-                fill="url(#growthGrad)"
-              />
-              <path
-                d="M 0 45 Q 25 35, 50 15 T 100 5"
-                fill="none"
-                stroke="#10b981"
-                strokeWidth="1.5"
-              />
-              {/* Nodes */}
-              <circle cx="0" cy="45" r="1.5" fill="#10b981" />
-              <circle cx="50" cy="15" r="1.5" fill="#10b981" />
-              <circle cx="100" cy="5" r="1.5" fill="#10b981" />
-            </svg>
-            <div className="absolute inset-x-0 bottom-0 flex justify-between text-[10px] text-brand-text font-medium px-1">
-              <span>Q1</span>
-              <span>Q2</span>
-              <span>Q3</span>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:hidden">
+          {/* Hiring Trend Bar Chart */}
+          <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex flex-col h-80 transition-all duration-300 hover:border-brand-accent/40">
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp className="w-4 h-4 text-brand-accent" />
+              <h4 className="text-xs font-semibold text-brand-heading uppercase tracking-wider">Hiring Trend Analysis</h4>
             </div>
-            <div className="absolute top-2 right-2 text-[10px] text-emerald-500 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-              +125% Growth
+            <div className="flex-1 flex items-end justify-between gap-1.5 pt-6 h-48">
+              {hiringTrend.map((d) => {
+                const pct = (d.employeesHired / maxHired) * 100;
+                return (
+                  <div key={d.year} className="flex-1 h-full flex flex-col items-center gap-1 group cursor-pointer">
+                    <span className="text-[9px] text-brand-accent font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                      {d.employeesHired}
+                    </span>
+                    <div className="flex-1 w-full flex items-end justify-center px-0.5">
+                      <div 
+                        className="w-full bg-brand-accent/15 border-t border-brand-accent rounded-t-sm group-hover:bg-brand-accent transition-all duration-300"
+                        style={{ height: `${pct}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-[9px] text-brand-text font-semibold">{d.year}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
-        </div>
 
-        {/* Attendance Distribution Donut Chart */}
-        <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex flex-col h-80 transition-all duration-300 hover:border-blue-500/40">
-          <div className="flex items-center gap-2 mb-4">
-            <Calendar className="w-4 h-4 text-blue-500" />
-            <h4 className="text-xs font-semibold text-brand-heading uppercase tracking-wider">Attendance Patterns</h4>
-          </div>
-          <div className="flex-1 flex items-center justify-center gap-6">
-            <div className="relative w-28 h-28 shrink-0">
-              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                {/* Background circle */}
-                <circle cx="18" cy="18" r="15.91" fill="none" stroke="var(--border)" strokeWidth="3" />
-                {/* Present circle segment */}
-                <circle cx="18" cy="18" r="15.91" fill="none" stroke="#7c3aed" strokeWidth="3.2" strokeDasharray="80 20" strokeDashoffset="0" />
-                {/* Late segment */}
-                <circle cx="18" cy="18" r="15.91" fill="none" stroke="#f59e0b" strokeWidth="3.2" strokeDasharray="15 85" strokeDashoffset="-80" />
-                {/* Absent segment */}
-                <circle cx="18" cy="18" r="15.91" fill="none" stroke="#ef4444" strokeWidth="3.2" strokeDasharray="5 95" strokeDashoffset="-95" />
+          {/* Department Growth Area Chart */}
+          <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex flex-col h-80 transition-all duration-300 hover:border-emerald-500/40">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="w-4 h-4 text-emerald-500" />
+              <h4 className="text-xs font-semibold text-brand-heading uppercase tracking-wider">Department Growth Tracking</h4>
+            </div>
+            <div className="flex-1 flex items-center justify-center relative">
+              <svg className="w-full h-full overflow-visible" viewBox="0 0 100 50">
+                <defs>
+                  <linearGradient id="growthGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity="0.2"/>
+                    <stop offset="100%" stopColor="#10b981" stopOpacity="0"/>
+                  </linearGradient>
+                </defs>
+                {points.length > 0 && (
+                  <>
+                    <path d={areaD} fill="url(#growthGrad)" />
+                    <path d={pathD} fill="none" stroke="#10b981" strokeWidth="1.5" />
+                    {points.map((p, i) => (
+                      <circle key={i} cx={p.x} cy={p.y} r="1.5" fill="#10b981" />
+                    ))}
+                  </>
+                )}
               </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center leading-none text-center">
-                <span className="text-sm font-bold text-brand-heading">92%</span>
-                <span className="text-[8px] text-brand-text mt-0.5">Rate</span>
+              <div className="absolute inset-x-0 bottom-0 flex justify-between text-[8px] text-brand-text font-medium px-1 overflow-hidden gap-1">
+                {departmentGrowth.map((d) => (
+                  <span key={d.department} className="truncate" title={d.department}>
+                    {d.department.split(' ')[0]}
+                  </span>
+                ))}
               </div>
             </div>
+          </div>
 
-            <div className="space-y-1.5 text-[10px] font-medium text-brand-text">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded bg-brand-accent"></span>
-                <span>Present (80%)</span>
+          {/* Attendance Distribution Donut Chart */}
+          <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex flex-col h-80 transition-all duration-300 hover:border-blue-500/40">
+            <div className="flex items-center gap-2 mb-4">
+              <Calendar className="w-4 h-4 text-blue-500" />
+              <h4 className="text-xs font-semibold text-brand-heading uppercase tracking-wider">Attendance Patterns</h4>
+            </div>
+            <div className="flex-1 flex items-center justify-center gap-6">
+              <div className="relative w-28 h-28 shrink-0">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                  {/* Background circle */}
+                  <circle cx="18" cy="18" r="15.91" fill="none" stroke="var(--border)" strokeWidth="3" />
+                  {/* Present segment */}
+                  {presentPercent > 0 && (
+                    <circle 
+                      cx="18" 
+                      cy="18" 
+                      r="15.91" 
+                      fill="none" 
+                      stroke="#7c3aed" 
+                      strokeWidth="3.2" 
+                      strokeDasharray={`${presentPercent} ${100 - presentPercent}`} 
+                      strokeDashoffset="0" 
+                    />
+                  )}
+                  {/* Absent segment */}
+                  {absentPercent > 0 && (
+                    <circle 
+                      cx="18" 
+                      cy="18" 
+                      r="15.91" 
+                      fill="none" 
+                      stroke="#ef4444" 
+                      strokeWidth="3.2" 
+                      strokeDasharray={`${absentPercent} ${100 - absentPercent}`} 
+                      strokeDashoffset={`-${presentPercent}`} 
+                    />
+                  )}
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center leading-none text-center">
+                  <span className="text-sm font-bold text-brand-heading">{presentPercent}%</span>
+                  <span className="text-[8px] text-brand-text mt-0.5">Rate</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded bg-amber-500"></span>
-                <span>Late Arrivals (15%)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded bg-red-500"></span>
-                <span>Absent (5%)</span>
+
+              <div className="space-y-1.5 text-[10px] font-medium text-brand-text">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded bg-brand-accent"></span>
+                  <span>Present ({presentPercent}%)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded bg-red-500"></span>
+                  <span>Absent ({absentPercent}%)</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>  
+      )}
 
-      {/* Performance Evaluations (Bonus Features) */}
+      {/* Performance Evaluations */}
       {/* <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm transition-all duration-300 hover:border-brand-accent/40">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
@@ -372,26 +439,34 @@ export const Reports: React.FC<ReportsProps> = ({ employees }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-border">
-              {performances.map((perf, idx) => (
-                <tr key={idx} className="hover:bg-brand-code/10 transition-colors">
-                  <td className="px-6 py-4">
-                    <div>
-                      <h4 className="font-semibold text-brand-heading">{perf.name}</h4>
-                      <p className="text-xs text-brand-text">{perf.role}</p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-brand-text font-medium">{perf.department}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono font-bold text-brand-heading">{perf.score}</span>
-                      <span className="text-brand-text/50">/ 5.0</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 font-semibold">
-                    <span className={perf.ratingColor}>{perf.rating}</span>
+              {performances.length > 0 ? (
+                performances.map((perf, idx) => (
+                  <tr key={idx} className="hover:bg-brand-code/10 transition-colors">
+                    <td className="px-6 py-4">
+                      <div>
+                        <h4 className="font-semibold text-brand-heading">{perf.name}</h4>
+                        <p className="text-xs text-brand-text">{perf.role}</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-brand-text font-medium">{perf.department}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono font-bold text-brand-heading">{perf.score}</span>
+                        <span className="text-brand-text/50">/ 5.0</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 font-semibold">
+                      <span className={perf.ratingColor}>{perf.rating}</span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="px-6 py-8 text-center text-brand-text font-medium">
+                    No evaluations loaded.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
