@@ -6,11 +6,16 @@ import type { Employee } from '../types';
 interface EmployeesProps {
   employees: Employee[];
   onDelete: (id: number) => void;
-  onAdd: (newEmp: Omit<Employee, 'id' | 'joinDate'>) => void;
+  onAdd?: (newEmp: Omit<Employee, 'id' | 'joinDate'>) => void;
 }
 
-export const Employees: React.FC<EmployeesProps> = ({ employees, onDelete, onAdd }) => {
+export const Employees: React.FC<EmployeesProps> = ({ employees, onDelete }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleEmployeeAdded = () => {
+    setRefreshTrigger((prev) => prev + 1);
+  };
 
   return (
     <div className="space-y-4">
@@ -21,11 +26,12 @@ export const Employees: React.FC<EmployeesProps> = ({ employees, onDelete, onAdd
         employees={employees}
         onDelete={onDelete}
         onOpenAddModal={() => setIsAddModalOpen(true)}
+        refreshTrigger={refreshTrigger}
       />
       <AddEmployeeModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onAdd={onAdd}
+        onAdd={handleEmployeeAdded}
       />
     </div>
   );

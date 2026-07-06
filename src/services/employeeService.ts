@@ -29,14 +29,11 @@ export const employeeService = {
     throw new Error(`Connect ASP.NET Web API endpoint GET /api/employees/${_id}`);
   },
 
-  createEmployee: async (_employee: Omit<Employee, 'id' | 'joinDate'>): Promise<Employee> => {
-    // API Integration:
-    // return apiFetch<Employee>('/employees', {
-    //   method: 'POST',
-    //   body: JSON.stringify(_employee),
-    // });
-    
-    throw new Error('Connect ASP.NET Web API endpoint POST /api/employees');
+  createEmployee: async (employee: any): Promise<{ success: boolean; data: any; message: string; statusCode: number }> => {
+    return apiFetch('/Employees/create-employee', {
+      method: 'POST',
+      body: JSON.stringify(employee),
+    });
   },
 
   updateEmployee: async (_id: number, _employee: Partial<Employee>): Promise<Employee> => {

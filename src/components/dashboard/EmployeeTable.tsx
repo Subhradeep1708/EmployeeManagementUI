@@ -7,11 +7,15 @@ import { useEffect } from "react";
 interface EmployeeTableProps {
   onDelete: (id: number) => void;
   onOpenAddModal: () => void;
+  showAddButton?: boolean;
+  refreshTrigger?: number;
 }
 
 export const EmployeeTable: React.FC<EmployeeTableProps> = ({
   onDelete,
   onOpenAddModal,
+  showAddButton = true,
+  refreshTrigger,
 }) => {
   const [selectedDept, setSelectedDept] = useState(0);
 
@@ -106,7 +110,8 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
   }, [page,
     searchTerm,
     selectedDept,
-    selectedStatus]);
+    selectedStatus,
+    refreshTrigger]);
 
   return (
     <div className="bg-brand-bg border border-brand-border rounded-2xl shadow-sm overflow-hidden transition-all duration-300">
@@ -170,13 +175,15 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
           </div>
 
           {/* Add Employee Button */}
-          <button
-            onClick={onOpenAddModal}
-            className="flex items-center gap-2 px-4 py-2.5 bg-brand-accent text-white rounded-xl text-xs font-semibold shadow-md shadow-brand-accent/25 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Add Employee</span>
-          </button>
+          {showAddButton && (
+            <button
+              onClick={onOpenAddModal}
+              className="flex items-center gap-2 px-4 py-2.5 bg-brand-accent text-white rounded-xl text-xs font-semibold shadow-md shadow-brand-accent/25 transition-all duration-200 cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Add Employee</span>
+            </button>
+          )}
         </div>
       </div>
 

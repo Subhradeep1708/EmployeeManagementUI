@@ -3,18 +3,19 @@ import { StatsCard } from '../components/dashboard/StatsCard';
 import { EmployeeTable } from '../components/dashboard/EmployeeTable';
 import { AddEmployeeModal } from '../components/common/AddEmployeeModal';
 import type { Employee } from '../types';
-import { Users, DollarSign, Briefcase, Award } from 'lucide-react';
+import { Users, DollarSign, Briefcase, Award, UserPlus } from 'lucide-react';
 import { dashboardService, type DashboardSummary } from '../services/dashboardService';
 
 
 interface DashboardProps {
   employees: Employee[];
   onDelete: (id: number) => void;
-  onAdd: (newEmp: Omit<Employee, 'id' | 'joinDate'>) => void;
+  onAdd?: (newEmp: Omit<Employee, 'id' | 'joinDate'>) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({  onDelete, onAdd }) => {
+export const Dashboard: React.FC<DashboardProps> = ({  onDelete }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const [summary, setSummary] = useState<DashboardSummary>({
     totalEmployees: 0,
@@ -22,24 +23,26 @@ export const Dashboard: React.FC<DashboardProps> = ({  onDelete, onAdd }) => {
     attendence: 0,
     averageSalary: 0,
     annualPayroll: 0,
-
     departmentBreakdown: [],
-
   });
 
+  const loadDashboard = async () => {
+    try {
+      const response = await dashboardService.getSummary();
+      setSummary(response.data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
-    const loadDashboard = async () => {
-      try {
-        const response = await dashboardService.getSummary();
-        setSummary(response.data);
-
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
     void loadDashboard();
   }, []);
+
+  const handleEmployeeAdded = () => {
+    setRefreshTrigger((prev) => prev + 1);
+    void loadDashboard();
+  };
 
 
   return (
@@ -82,14 +85,20 @@ export const Dashboard: React.FC<DashboardProps> = ({  onDelete, onAdd }) => {
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-brand-heading">Active Staff Directory</h3>
-            <span className="text-xs text-brand-text/80 bg-brand-code border border-brand-border px-2.5 py-1 rounded-lg">
-              Dynamic Filter Enabled
-            </span>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 px-3.5 py-2 bg-brand-accent text-white rounded-xl text-xs font-semibold shadow-md shadow-brand-accent/25 transition-all duration-200 cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Add Employee</span>
+            </button>
           </div>
           <EmployeeTable
             // employees={employees}
             onDelete={onDelete}
             onOpenAddModal={() => setIsAddModalOpen(true)}
+            showAddButton={false}
+            refreshTrigger={refreshTrigger}
           />
         </div>
 
@@ -130,7 +139,7 @@ export const Dashboard: React.FC<DashboardProps> = ({  onDelete, onAdd }) => {
       <AddEmployeeModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onAdd={onAdd}
+        onAdd={handleEmployeeAdded}
       />
     </div>
   );
