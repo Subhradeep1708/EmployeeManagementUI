@@ -33,8 +33,6 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
 
   const isEditMode = !!employeeId;
 
@@ -57,8 +55,6 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
       deduction: '0',
     });
     setErrors({});
-    setSubmitError(null);
-    setSubmitSuccess(null);
   };
 
   useEffect(() => {
@@ -66,7 +62,6 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
       if (employeeId) {
         const fetchEmployee = async () => {
           setFetchLoading(true);
-          setSubmitError(null);
           try {
             const response = await employeeService.getEmployeeById(employeeId);
             if (response.success && response.data) {
@@ -89,10 +84,10 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
                 deduction: String(emp.deduction || '0'),
               });
             } else {
-              setSubmitError(response.message || 'Failed to fetch employee details.');
+              showToast(response.message || 'Failed to fetch employee details.', 'error');
             }
           } catch (err: any) {
-            setSubmitError(err.message || 'An error occurred while fetching employee details.');
+            showToast(err.message || 'An error occurred while fetching employee details.', 'error');
           } finally {
             setFetchLoading(false);
           }
@@ -146,8 +141,6 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
     if (!validateForm()) return;
 
     setLoading(true);
-    setSubmitError(null);
-    setSubmitSuccess(null);
 
     const payload = {
       employeeCode: formData.employeeCode,
@@ -174,7 +167,6 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
 
       if (response.success) {
         const msg = response.message || `Employee ${isEditMode ? 'updated' : 'created'} successfully.`;
-        setSubmitSuccess(msg);
         showToast(msg, 'success');
         
         setTimeout(() => {
@@ -184,12 +176,10 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
         }, 1200);
       } else {
         const errMsg = response.message || `Failed to ${isEditMode ? 'update' : 'create'} employee.`;
-        setSubmitError(errMsg);
         showToast(errMsg, 'error');
       }
     } catch (err: any) {
       const errMsg = err.message || `An error occurred while ${isEditMode ? 'updating' : 'creating'} the employee.`;
-      setSubmitError(errMsg);
       showToast(errMsg, 'error');
     } finally {
       setLoading(false);
@@ -235,16 +225,6 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
-            {submitError && (
-              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 text-xs font-semibold dark:text-rose-450">
-                {submitError}
-              </div>
-            )}
-            {submitSuccess && (
-              <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-semibold dark:text-emerald-400">
-                {submitSuccess}
-              </div>
-            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Employee Code */}

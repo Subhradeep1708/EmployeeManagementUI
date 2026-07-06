@@ -3,7 +3,7 @@ import { StatsCard } from '../components/dashboard/StatsCard';
 import { EmployeeTable } from '../components/dashboard/EmployeeTable';
 import { AddEmployeeModal } from '../components/common/AddEmployeeModal';
 import type { Employee } from '../types';
-import { Users, DollarSign, Briefcase, Award, UserPlus } from 'lucide-react';
+import { Users, Briefcase, Award, UserPlus, IndianRupee } from 'lucide-react';
 import { dashboardService, type DashboardSummary } from '../services/dashboardService';
 
 
@@ -46,6 +46,15 @@ export const Dashboard: React.FC<DashboardProps> = ({  onDelete }) => {
   };
 
 
+  const formatAverageSalary = (val: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    }).format(val);
+  };
+
   return (
     <div className="space-y-8">
       {/* Stats Section */}
@@ -66,13 +75,13 @@ export const Dashboard: React.FC<DashboardProps> = ({  onDelete }) => {
           title="Annual Payroll"
           // value={`$${(totalSalary / 1000).toFixed(0)}k`}
           value={summary.annualPayroll}
-          icon={<DollarSign className="w-6 h-6" />}
+          icon={< IndianRupee  className="w-6 h-6" />}
           color="emerald"
         />
         <StatsCard
           title="Average Salary"
           // value={`$${(averageSalary / 1000).toFixed(0)}k`}
-          value={summary.averageSalary}
+          value={formatAverageSalary(summary.averageSalary)}
           icon={<Award className="w-6 h-6" />}
           trend="Stable"
           trendType="neutral"

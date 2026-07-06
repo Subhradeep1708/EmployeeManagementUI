@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
-import { ShieldCheck, Award, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Award, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export const Login: React.FC = () => {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  const [username, setUsername] = useState('hrmanager');
+  const [password, setPassword] = useState('dummyhash');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ export const Login: React.FC = () => {
       }, 800);
     } catch (err: any) {
       setIsLoading(false);
-      setError(err.message || 'Login failed');
+      setError(err.message || 'Invalid username or password.');
     }
   };
 
@@ -69,14 +70,27 @@ export const Login: React.FC = () => {
 
           <div>
             <label className="block text-xs font-semibold text-brand-text mb-1.5">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full text-sm px-4 py-3 rounded-xl bg-brand-code border border-brand-border text-brand-heading focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition-all duration-200"
-              placeholder="Enter password"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full text-sm pl-4 pr-11 py-3 rounded-xl bg-brand-code border border-brand-border text-brand-heading focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition-all duration-200"
+                placeholder="Enter password"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-brand-text hover:text-brand-heading transition-colors duration-150 cursor-pointer"
+              >
+                {showPassword ? (
+                  <EyeOff className="w-4.5 h-4.5" />
+                ) : (
+                  <Eye className="w-4.5 h-4.5" />
+                )}
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center justify-between text-xs pt-1">

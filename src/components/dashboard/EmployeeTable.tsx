@@ -8,11 +8,13 @@ import {
   Trash2,
   UserPlus,
   Loader2,
+  Info,
 } from 'lucide-react';
 import { employeeService } from '../../services/employeeService';
 import type { Employee } from '../../types';
 import { useToast } from '../../context/ToastContext';
 import { getAvatarFallback } from '../../utils/helpers';
+import { ViewEmployeeModal } from '../common/ViewEmployeeModal';
 
 interface EmployeeTableProps {
   onDelete: (id: number) => void;
@@ -32,6 +34,7 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
   const { showToast } = useToast();
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [viewingId, setViewingId] = useState<number | null>(null);
 
   const [selectedDept, setSelectedDept] = useState(0);
   const [selectedStatus, setSelectedStatus] = useState(0);
@@ -238,12 +241,19 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
                   <td className="px-6 py-4 text-brand-text font-medium">{emp.designation}</td>
                   <td className="px-6 py-4 text-brand-heading font-semibold">{formatSalary(emp.salary)}</td>
                   <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusBadge(emp.status)}`}>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${getStatusBadge(emp.status)}`}>
                       {emp.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <button
+                        title="View Employee Profile"
+                        onClick={() => setViewingId(emp.employeeId)}
+                        className="p-1.5 rounded-lg text-brand-text hover:text-blue-500 hover:bg-blue-500/10 transition-all duration-150 cursor-pointer"
+                      >
+                        <Info className="w-4 h-4" />
+                      </button>
                       <button
                         title="Edit Employee"
                         onClick={() => onEdit(emp.employeeId)}
@@ -343,6 +353,13 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
           </div>
         </div>
       )}
+
+      {/* View Details Modal */}
+      <ViewEmployeeModal
+        isOpen={viewingId !== null}
+        onClose={() => setViewingId(null)}
+        employeeId={viewingId}
+      />
     </div>
   );
 };
