@@ -14,7 +14,8 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({  onDelete }) => {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingEmployeeId, setEditingEmployeeId] = useState<number | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const [summary, setSummary] = useState<DashboardSummary>({
@@ -86,7 +87,10 @@ export const Dashboard: React.FC<DashboardProps> = ({  onDelete }) => {
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-brand-heading">Active Staff Directory</h3>
             <button
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={() => {
+                setEditingEmployeeId(null);
+                setIsModalOpen(true);
+              }}
               className="flex items-center gap-2 px-3.5 py-2 bg-brand-accent text-white rounded-xl text-xs font-semibold shadow-md shadow-brand-accent/25 transition-all duration-200 cursor-pointer"
             >
               <UserPlus className="w-4 h-4" />
@@ -96,7 +100,14 @@ export const Dashboard: React.FC<DashboardProps> = ({  onDelete }) => {
           <EmployeeTable
             // employees={employees}
             onDelete={onDelete}
-            onOpenAddModal={() => setIsAddModalOpen(true)}
+            onOpenAddModal={() => {
+              setEditingEmployeeId(null);
+              setIsModalOpen(true);
+            }}
+            onEdit={(id) => {
+              setEditingEmployeeId(id);
+              setIsModalOpen(true);
+            }}
             showAddButton={false}
             refreshTrigger={refreshTrigger}
           />
@@ -137,9 +148,13 @@ export const Dashboard: React.FC<DashboardProps> = ({  onDelete }) => {
       </div>
 
       <AddEmployeeModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingEmployeeId(null);
+        }}
         onAdd={handleEmployeeAdded}
+        employeeId={editingEmployeeId}
       />
     </div>
   );

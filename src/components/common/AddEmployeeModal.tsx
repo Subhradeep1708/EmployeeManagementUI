@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, UserPlus, Loader2 } from 'lucide-react';
 import { employeeService } from '../../services/employeeService';
+import { useToast } from '../../context/ToastContext';
 
 interface AddEmployeeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: () => void;
+  employeeId?: number | null;
 }
 
-export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, onAdd }) => {
+export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, onAdd, employeeId }) => {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     employeeCode: '',
     firstName: '',
@@ -29,8 +32,77 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+
+  const isEditMode = !!employeeId;
+
+  const handleReset = () => {
+    setFormData({
+      employeeCode: '',
+      firstName: '',
+      lastName: '',
+      gender: 'Male',
+      dateOfBirth: '',
+      email: '',
+      phone: '',
+      address: '',
+      hireDate: new Date().toISOString().split('T')[0],
+      departmentId: '1',
+      designationId: '1',
+      statusId: '1',
+      basicSalary: '',
+      bonus: '0',
+      deduction: '0',
+    });
+    setErrors({});
+    setSubmitError(null);
+    setSubmitSuccess(null);
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      if (employeeId) {
+        const fetchEmployee = async () => {
+          setFetchLoading(true);
+          setSubmitError(null);
+          try {
+            const response = await employeeService.getEmployeeById(employeeId);
+            if (response.success && response.data) {
+              const emp = response.data;
+              setFormData({
+                employeeCode: emp.employeeCode || '',
+                firstName: emp.firstName || '',
+                lastName: emp.lastName || '',
+                gender: emp.gender || 'Male',
+                dateOfBirth: emp.dateOfBirth ? emp.dateOfBirth.split('T')[0] : '',
+                email: emp.email || '',
+                phone: emp.phone || '',
+                address: emp.address || '',
+                hireDate: emp.hireDate ? emp.hireDate.split('T')[0] : new Date().toISOString().split('T')[0],
+                departmentId: String(emp.departmentId || '1'),
+                designationId: String(emp.designationId || '1'),
+                statusId: String(emp.statusId || '1'),
+                basicSalary: String(emp.basicSalary || ''),
+                bonus: String(emp.bonus || '0'),
+                deduction: String(emp.deduction || '0'),
+              });
+            } else {
+              setSubmitError(response.message || 'Failed to fetch employee details.');
+            }
+          } catch (err: any) {
+            setSubmitError(err.message || 'An error occurred while fetching employee details.');
+          } finally {
+            setFetchLoading(false);
+          }
+        };
+        void fetchEmployee();
+      } else {
+        handleReset();
+      }
+    }
+  }, [isOpen, employeeId]);
 
   if (!isOpen) return null;
 
@@ -69,29 +141,6 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleReset = () => {
-    setFormData({
-      employeeCode: '',
-      firstName: '',
-      lastName: '',
-      gender: 'Male',
-      dateOfBirth: '',
-      email: '',
-      phone: '',
-      address: '',
-      hireDate: new Date().toISOString().split('T')[0],
-      departmentId: '1',
-      designationId: '1',
-      statusId: '1',
-      basicSalary: '',
-      bonus: '0',
-      deduction: '0',
-    });
-    setErrors({});
-    setSubmitError(null);
-    setSubmitSuccess(null);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -119,20 +168,29 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
     };
 
     try {
-      const response = await employeeService.createEmployee(payload);
+      const response = isEditMode
+        ? await employeeService.updateEmployee(employeeId!, payload)
+        : await employeeService.createEmployee(payload);
 
       if (response.success) {
-        setSubmitSuccess(response.message || 'Employee created successfully.');
+        const msg = response.message || `Employee ${isEditMode ? 'updated' : 'created'} successfully.`;
+        setSubmitSuccess(msg);
+        showToast(msg, 'success');
+        
         setTimeout(() => {
           onAdd(); // Trigger reload of lists in parent
           handleReset();
           onClose();
         }, 1200);
       } else {
-        setSubmitError(response.message || 'Failed to create employee.');
+        const errMsg = response.message || `Failed to ${isEditMode ? 'update' : 'create'} employee.`;
+        setSubmitError(errMsg);
+        showToast(errMsg, 'error');
       }
     } catch (err: any) {
-      setSubmitError(err.message || 'An error occurred while creating the employee.');
+      const errMsg = err.message || `An error occurred while ${isEditMode ? 'updating' : 'creating'} the employee.`;
+      setSubmitError(errMsg);
+      showToast(errMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -153,316 +211,325 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
         <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-code/20 shrink-0">
           <div className="flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-brand-accent" />
-            <h3 className="text-lg font-bold text-brand-heading">Add New Employee</h3>
+            <h3 className="text-lg font-bold text-brand-heading">
+              {isEditMode ? 'Edit Employee Record' : 'Add New Employee'}
+            </h3>
           </div>
           <button
             onClick={() => {
               handleReset();
               onClose();
             }}
-            disabled={loading}
+            disabled={loading || fetchLoading}
             className="p-1 rounded-lg text-brand-text hover:text-brand-heading hover:bg-brand-border transition-all duration-200 cursor-pointer disabled:opacity-50"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
-          {submitError && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-650 text-xs font-semibold dark:text-rose-450">
-              {submitError}
-            </div>
-          )}
-          {submitSuccess && (
-            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-semibold dark:text-emerald-400">
-              {submitSuccess}
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Employee Code */}
-            <div>
-              <label className="block text-xs font-semibold text-brand-text mb-1.5">Employee Code</label>
-              <input
-                type="text"
-                name="employeeCode"
-                disabled={loading}
-                value={formData.employeeCode}
-                onChange={handleChange}
-                placeholder="e.g. EMP016"
-                className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
-                  errors.employeeCode ? 'border-red-500' : 'border-brand-border'
-                }`}
-              />
-              {errors.employeeCode && <p className="text-[10px] text-red-500 mt-1">{errors.employeeCode}</p>}
-            </div>
-
-            {/* Gender */}
-            <div>
-              <label className="block text-xs font-semibold text-brand-text mb-1.5">Gender</label>
-              <select
-                name="gender"
-                disabled={loading}
-                value={formData.gender}
-                onChange={handleChange}
-                className="w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border border-brand-border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 cursor-pointer"
-              >
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-
-            {/* First Name */}
-            <div>
-              <label className="block text-xs font-semibold text-brand-text mb-1.5">First Name</label>
-              <input
-                type="text"
-                name="firstName"
-                disabled={loading}
-                value={formData.firstName}
-                onChange={handleChange}
-                placeholder="e.g. Subhradeep"
-                className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
-                  errors.firstName ? 'border-red-500' : 'border-brand-border'
-                }`}
-              />
-              {errors.firstName && <p className="text-[10px] text-red-500 mt-1">{errors.firstName}</p>}
-            </div>
-
-            {/* Last Name */}
-            <div>
-              <label className="block text-xs font-semibold text-brand-text mb-1.5">Last Name</label>
-              <input
-                type="text"
-                name="lastName"
-                disabled={loading}
-                value={formData.lastName}
-                onChange={handleChange}
-                placeholder="e.g. Sardar"
-                className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
-                  errors.lastName ? 'border-red-500' : 'border-brand-border'
-                }`}
-              />
-              {errors.lastName && <p className="text-[10px] text-red-500 mt-1">{errors.lastName}</p>}
-            </div>
-
-            {/* Email Address */}
-            <div>
-              <label className="block text-xs font-semibold text-brand-text mb-1.5">Email Address</label>
-              <input
-                type="email"
-                name="email"
-                disabled={loading}
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="subhradeep@gmail.com"
-                className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
-                  errors.email ? 'border-red-500' : 'border-brand-border'
-                }`}
-              />
-              {errors.email && <p className="text-[10px] text-red-500 mt-1">{errors.email}</p>}
-            </div>
-
-            {/* Phone Number */}
-            <div>
-              <label className="block text-xs font-semibold text-brand-text mb-1.5">Phone Number</label>
-              <input
-                type="text"
-                name="phone"
-                disabled={loading}
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="e.g. 9876543210"
-                className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
-                  errors.phone ? 'border-red-500' : 'border-brand-border'
-                }`}
-              />
-              {errors.phone && <p className="text-[10px] text-red-500 mt-1">{errors.phone}</p>}
-            </div>
-
-            {/* Date of Birth */}
-            <div>
-              <label className="block text-xs font-semibold text-brand-text mb-1.5">Date of Birth</label>
-              <input
-                type="date"
-                name="dateOfBirth"
-                disabled={loading}
-                value={formData.dateOfBirth}
-                onChange={handleChange}
-                className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 cursor-pointer ${
-                  errors.dateOfBirth ? 'border-red-500' : 'border-brand-border'
-                }`}
-              />
-              {errors.dateOfBirth && <p className="text-[10px] text-red-500 mt-1">{errors.dateOfBirth}</p>}
-            </div>
-
-            {/* Hire Date */}
-            <div>
-              <label className="block text-xs font-semibold text-brand-text mb-1.5">Hire Date</label>
-              <input
-                type="date"
-                name="hireDate"
-                disabled={loading}
-                value={formData.hireDate}
-                onChange={handleChange}
-                className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 cursor-pointer ${
-                  errors.hireDate ? 'border-red-500' : 'border-brand-border'
-                }`}
-              />
-              {errors.hireDate && <p className="text-[10px] text-red-500 mt-1">{errors.hireDate}</p>}
-            </div>
-
-            {/* Department */}
-            <div>
-              <label className="block text-xs font-semibold text-brand-text mb-1.5">Department</label>
-              <select
-                name="departmentId"
-                disabled={loading}
-                value={formData.departmentId}
-                onChange={handleChange}
-                className="w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border border-brand-border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 cursor-pointer"
-              >
-                <option value="1">Information Technology</option>
-                <option value="2">Human Resources</option>
-                <option value="3">Finance</option>
-                <option value="4">Marketing</option>
-              </select>
-            </div>
-
-            {/* Designation */}
-            <div>
-              <label className="block text-xs font-semibold text-brand-text mb-1.5">Designation</label>
-              <select
-                name="designationId"
-                disabled={loading}
-                value={formData.designationId}
-                onChange={handleChange}
-                className="w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border border-brand-border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 cursor-pointer"
-              >
-                <option value="1">Software Engineer</option>
-                <option value="2">HR Manager</option>
-                <option value="3">Finance Analyst</option>
-                <option value="4">Marketing Specialist</option>
-              </select>
-            </div>
-
-            {/* Status */}
-            <div>
-              <label className="block text-xs font-semibold text-brand-text mb-1.5">Status</label>
-              <select
-                name="statusId"
-                disabled={loading}
-                value={formData.statusId}
-                onChange={handleChange}
-                className="w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border border-brand-border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 cursor-pointer"
-              >
-                <option value="1">Active</option>
-                <option value="2">On Leave</option>
-                <option value="3">Resigned</option>
-                <option value="4">Terminated</option>
-              </select>
-            </div>
-
-            {/* Address */}
-            <div>
-              <label className="block text-xs font-semibold text-brand-text mb-1.5">Address</label>
-              <input
-                type="text"
-                name="address"
-                disabled={loading}
-                value={formData.address}
-                onChange={handleChange}
-                placeholder="e.g. Kolkata"
-                className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
-                  errors.address ? 'border-red-500' : 'border-brand-border'
-                }`}
-              />
-              {errors.address && <p className="text-[10px] text-red-500 mt-1">{errors.address}</p>}
-            </div>
-
-            {/* Basic Salary */}
-            <div>
-              <label className="block text-xs font-semibold text-brand-text mb-1.5">Basic Salary</label>
-              <input
-                type="text"
-                name="basicSalary"
-                disabled={loading}
-                value={formData.basicSalary}
-                onChange={handleChange}
-                placeholder="e.g. 60000"
-                className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
-                  errors.basicSalary ? 'border-red-500' : 'border-brand-border'
-                }`}
-              />
-              {errors.basicSalary && <p className="text-[10px] text-red-500 mt-1">{errors.basicSalary}</p>}
-            </div>
-
-            {/* Bonus */}
-            <div>
-              <label className="block text-xs font-semibold text-brand-text mb-1.5">Bonus</label>
-              <input
-                type="text"
-                name="bonus"
-                disabled={loading}
-                value={formData.bonus}
-                onChange={handleChange}
-                placeholder="e.g. 5000"
-                className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
-                  errors.bonus ? 'border-red-500' : 'border-brand-border'
-                }`}
-              />
-              {errors.bonus && <p className="text-[10px] text-red-500 mt-1">{errors.bonus}</p>}
-            </div>
-
-            {/* Deduction */}
-            <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-brand-text mb-1.5">Deduction</label>
-              <input
-                type="text"
-                name="deduction"
-                disabled={loading}
-                value={formData.deduction}
-                onChange={handleChange}
-                placeholder="e.g. 1000"
-                className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
-                  errors.deduction ? 'border-red-500' : 'border-brand-border'
-                }`}
-              />
-              {errors.deduction && <p className="text-[10px] text-red-500 mt-1">{errors.deduction}</p>}
-            </div>
+        {/* Form Body or Loading Spinner */}
+        {fetchLoading ? (
+          <div className="flex-1 flex flex-col items-center justify-center py-24 gap-3 bg-brand-bg text-brand-text">
+            <Loader2 className="w-8 h-8 text-brand-accent animate-spin" />
+            <p className="text-sm font-semibold">Loading employee details...</p>
           </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+            {submitError && (
+              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 text-xs font-semibold dark:text-rose-450">
+                {submitError}
+              </div>
+            )}
+            {submitSuccess && (
+              <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-semibold dark:text-emerald-400">
+                {submitSuccess}
+              </div>
+            )}
 
-          {/* Buttons */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-brand-border mt-6 shrink-0">
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => {
-                handleReset();
-                onClose();
-              }}
-              className="px-5 py-2.5 rounded-xl text-sm font-medium text-brand-text hover:text-brand-heading hover:bg-brand-border/40 transition-all duration-200 cursor-pointer disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-5 py-2.5 rounded-xl text-sm font-medium bg-brand-accent text-white shadow-md shadow-brand-accent/20 transition-all duration-200 cursor-pointer disabled:opacity-50 flex items-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <span>Save Employee</span>
-              )}
-            </button>
-          </div>
-        </form>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Employee Code */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-text mb-1.5">Employee Code</label>
+                <input
+                  type="text"
+                  name="employeeCode"
+                  disabled={loading}
+                  value={formData.employeeCode}
+                  onChange={handleChange}
+                  placeholder="e.g. EMP016"
+                  className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
+                    errors.employeeCode ? 'border-red-500' : 'border-brand-border'
+                  }`}
+                />
+                {errors.employeeCode && <p className="text-[10px] text-red-500 mt-1">{errors.employeeCode}</p>}
+              </div>
+
+              {/* Gender */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-text mb-1.5">Gender</label>
+                <select
+                  name="gender"
+                  disabled={loading}
+                  value={formData.gender}
+                  onChange={handleChange}
+                  className="w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border border-brand-border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 cursor-pointer"
+                >
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              {/* First Name */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-text mb-1.5">First Name</label>
+                <input
+                  type="text"
+                  name="firstName"
+                  disabled={loading}
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  placeholder="e.g. Subhradeep"
+                  className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
+                    errors.firstName ? 'border-red-500' : 'border-brand-border'
+                  }`}
+                />
+                {errors.firstName && <p className="text-[10px] text-red-500 mt-1">{errors.firstName}</p>}
+              </div>
+
+              {/* Last Name */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-text mb-1.5">Last Name</label>
+                <input
+                  type="text"
+                  name="lastName"
+                  disabled={loading}
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  placeholder="e.g. Sardar"
+                  className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
+                    errors.lastName ? 'border-red-500' : 'border-brand-border'
+                  }`}
+                />
+                {errors.lastName && <p className="text-[10px] text-red-500 mt-1">{errors.lastName}</p>}
+              </div>
+
+              {/* Email Address */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-text mb-1.5">Email Address</label>
+                <input
+                  type="email"
+                  name="email"
+                  disabled={loading}
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="subhradeep@gmail.com"
+                  className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
+                    errors.email ? 'border-red-500' : 'border-brand-border'
+                  }`}
+                />
+                {errors.email && <p className="text-[10px] text-red-500 mt-1">{errors.email}</p>}
+              </div>
+
+              {/* Phone Number */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-text mb-1.5">Phone Number</label>
+                <input
+                  type="text"
+                  name="phone"
+                  disabled={loading}
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="e.g. 9876543210"
+                  className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
+                    errors.phone ? 'border-red-500' : 'border-brand-border'
+                  }`}
+                />
+                {errors.phone && <p className="text-[10px] text-red-500 mt-1">{errors.phone}</p>}
+              </div>
+
+              {/* Date of Birth */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-text mb-1.5">Date of Birth</label>
+                <input
+                  type="date"
+                  name="dateOfBirth"
+                  disabled={loading}
+                  value={formData.dateOfBirth}
+                  onChange={handleChange}
+                  className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 cursor-pointer ${
+                    errors.dateOfBirth ? 'border-red-500' : 'border-brand-border'
+                  }`}
+                />
+                {errors.dateOfBirth && <p className="text-[10px] text-red-500 mt-1">{errors.dateOfBirth}</p>}
+              </div>
+
+              {/* Hire Date */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-text mb-1.5">Hire Date</label>
+                <input
+                  type="date"
+                  name="hireDate"
+                  disabled={loading}
+                  value={formData.hireDate}
+                  onChange={handleChange}
+                  className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 cursor-pointer ${
+                    errors.hireDate ? 'border-red-500' : 'border-brand-border'
+                  }`}
+                />
+                {errors.hireDate && <p className="text-[10px] text-red-500 mt-1">{errors.hireDate}</p>}
+              </div>
+
+              {/* Department */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-text mb-1.5">Department</label>
+                <select
+                  name="departmentId"
+                  disabled={loading}
+                  value={formData.departmentId}
+                  onChange={handleChange}
+                  className="w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border border-brand-border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 cursor-pointer"
+                >
+                  <option value="1">Information Technology</option>
+                  <option value="2">Human Resources</option>
+                  <option value="3">Finance</option>
+                  <option value="4">Marketing</option>
+                </select>
+              </div>
+
+              {/* Designation */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-text mb-1.5">Designation</label>
+                <select
+                  name="designationId"
+                  disabled={loading}
+                  value={formData.designationId}
+                  onChange={handleChange}
+                  className="w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border border-brand-border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 cursor-pointer"
+                >
+                  <option value="1">Software Engineer</option>
+                  <option value="2">HR Manager</option>
+                  <option value="3">Finance Analyst</option>
+                  <option value="4">Marketing Specialist</option>
+                </select>
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-text mb-1.5">Status</label>
+                <select
+                  name="statusId"
+                  disabled={loading}
+                  value={formData.statusId}
+                  onChange={handleChange}
+                  className="w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border border-brand-border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 cursor-pointer"
+                >
+                  <option value="1">Active</option>
+                  <option value="2">On Leave</option>
+                  <option value="3">Resigned</option>
+                  <option value="4">Terminated</option>
+                </select>
+              </div>
+
+              {/* Address */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-text mb-1.5">Address</label>
+                <input
+                  type="text"
+                  name="address"
+                  disabled={loading}
+                  value={formData.address}
+                  onChange={handleChange}
+                  placeholder="e.g. Kolkata"
+                  className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
+                    errors.address ? 'border-red-500' : 'border-brand-border'
+                  }`}
+                />
+                {errors.address && <p className="text-[10px] text-red-500 mt-1">{errors.address}</p>}
+              </div>
+
+              {/* Basic Salary */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-text mb-1.5">Basic Salary</label>
+                <input
+                  type="text"
+                  name="basicSalary"
+                  disabled={loading}
+                  value={formData.basicSalary}
+                  onChange={handleChange}
+                  placeholder="e.g. 60000"
+                  className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
+                    errors.basicSalary ? 'border-red-500' : 'border-brand-border'
+                  }`}
+                />
+                {errors.basicSalary && <p className="text-[10px] text-red-500 mt-1">{errors.basicSalary}</p>}
+              </div>
+
+              {/* Bonus */}
+              <div>
+                <label className="block text-xs font-semibold text-brand-text mb-1.5">Bonus</label>
+                <input
+                  type="text"
+                  name="bonus"
+                  disabled={loading}
+                  value={formData.bonus}
+                  onChange={handleChange}
+                  placeholder="e.g. 5000"
+                  className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
+                    errors.bonus ? 'border-red-500' : 'border-brand-border'
+                  }`}
+                />
+                {errors.bonus && <p className="text-[10px] text-red-500 mt-1">{errors.bonus}</p>}
+              </div>
+
+              {/* Deduction */}
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-brand-text mb-1.5">Deduction</label>
+                <input
+                  type="text"
+                  name="deduction"
+                  disabled={loading}
+                  value={formData.deduction}
+                  onChange={handleChange}
+                  placeholder="e.g. 1000"
+                  className={`w-full text-sm px-4 py-2.5 rounded-xl bg-brand-code/50 border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 ${
+                    errors.deduction ? 'border-red-500' : 'border-brand-border'
+                  }`}
+                />
+                {errors.deduction && <p className="text-[10px] text-red-500 mt-1">{errors.deduction}</p>}
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-brand-border mt-6 shrink-0">
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => {
+                  handleReset();
+                  onClose();
+                }}
+                className="px-5 py-2.5 rounded-xl text-sm font-medium text-brand-text hover:text-brand-heading hover:bg-brand-border/40 transition-all duration-200 cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-5 py-2.5 rounded-xl text-sm font-medium bg-brand-accent text-white shadow-md shadow-brand-accent/20 transition-all duration-200 cursor-pointer disabled:opacity-50 flex items-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>{isEditMode ? 'Updating...' : 'Saving...'}</span>
+                  </>
+                ) : (
+                  <span>{isEditMode ? 'Update Employee' : 'Save Employee'}</span>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

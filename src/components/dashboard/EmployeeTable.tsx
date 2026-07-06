@@ -7,6 +7,7 @@ import { useEffect } from "react";
 interface EmployeeTableProps {
   onDelete: (id: number) => void;
   onOpenAddModal: () => void;
+  onEdit: (id: number) => void;
   showAddButton?: boolean;
   refreshTrigger?: number;
 }
@@ -14,6 +15,7 @@ interface EmployeeTableProps {
 export const EmployeeTable: React.FC<EmployeeTableProps> = ({
   onDelete,
   onOpenAddModal,
+  onEdit,
   showAddButton = true,
   refreshTrigger,
 }) => {
@@ -232,6 +234,7 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
                     <div className="flex items-center justify-end gap-2">
                       <button
                         title="Edit Employee"
+                        onClick={() => onEdit(emp.employeeId)}
                         className="p-1.5 rounded-lg text-brand-text hover:text-brand-accent hover:bg-brand-accent-bg transition-all duration-150 cursor-pointer"
                       >
                         <Edit3 className="w-4 h-4" />

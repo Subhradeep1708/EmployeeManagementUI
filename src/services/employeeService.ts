@@ -1,5 +1,4 @@
 import { apiFetch } from './api';
-import type { Employee } from '../types';
 
 export const employeeService = {
   getEmployees: async (
@@ -22,11 +21,8 @@ export const employeeService = {
 
     },
 
-  getEmployeeById: async (_id: number): Promise<Employee> => {
-    // API Integration:
-    // return apiFetch<Employee>(`/employees/${_id}`);
-    
-    throw new Error(`Connect ASP.NET Web API endpoint GET /api/employees/${_id}`);
+  getEmployeeById: async (id: number): Promise<{ success: boolean; data: any; message: string; statusCode: number }> => {
+    return apiFetch(`/Employees/get-employee-by-id/${id}`);
   },
 
   createEmployee: async (employee: any): Promise<{ success: boolean; data: any; message: string; statusCode: number }> => {
@@ -36,14 +32,11 @@ export const employeeService = {
     });
   },
 
-  updateEmployee: async (_id: number, _employee: Partial<Employee>): Promise<Employee> => {
-    // API Integration:
-    // return apiFetch<Employee>(`/employees/${_id}`, {
-    //   method: 'PUT',
-    //   body: JSON.stringify(_employee),
-    // });
-    
-    throw new Error(`Connect ASP.NET Web API endpoint PUT /api/employees/${_id}`);
+  updateEmployee: async (id: number, employee: any): Promise<{ success: boolean; data: any; message: string; statusCode: number }> => {
+    return apiFetch(`/Employees/update-employee/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(employee),
+    });
   },
 
   deleteEmployee: async (_id: number): Promise<void> => {

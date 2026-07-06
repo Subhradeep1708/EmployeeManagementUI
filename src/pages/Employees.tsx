@@ -10,7 +10,8 @@ interface EmployeesProps {
 }
 
 export const Employees: React.FC<EmployeesProps> = ({ employees, onDelete }) => {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingEmployeeId, setEditingEmployeeId] = useState<number | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleEmployeeAdded = () => {
@@ -25,13 +26,24 @@ export const Employees: React.FC<EmployeesProps> = ({ employees, onDelete }) => 
       <EmployeeTable
         employees={employees}
         onDelete={onDelete}
-        onOpenAddModal={() => setIsAddModalOpen(true)}
+        onOpenAddModal={() => {
+          setEditingEmployeeId(null);
+          setIsModalOpen(true);
+        }}
+        onEdit={(id) => {
+          setEditingEmployeeId(id);
+          setIsModalOpen(true);
+        }}
         refreshTrigger={refreshTrigger}
       />
       <AddEmployeeModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingEmployeeId(null);
+        }}
         onAdd={handleEmployeeAdded}
+        employeeId={editingEmployeeId}
       />
     </div>
   );
