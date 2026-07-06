@@ -1,25 +1,84 @@
-// import { apiFetch } from './api';
-import type { AttendanceRecord } from '../types';
+import { apiFetch } from './api';
+
+export interface AttendanceSummary {
+  present: number;
+  absent: number;
+  leave: number;
+  halfDay: number;
+  wfh: number;
+  attendanceRate: number;
+}
+
+export interface AttendanceItem {
+  attendanceId: number;
+  employeeId: number;
+  employeeName: string;
+  department: string;
+  attendanceDate: string;
+  status: string;
+  checkIn: string;
+  checkOut: string;
+}
+
+export interface GetAttendanceResponse {
+  success: boolean;
+  data: {
+    items: AttendanceItem[];
+    summary: AttendanceSummary;
+    totalRecords: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  };
+  message: string;
+  statusCode: number;
+}
 
 export const attendanceService = {
-  getAttendanceRecords: async (_date?: string): Promise<AttendanceRecord[]> => {
-    // API Integration:
-    // return apiFetch<AttendanceRecord[]>('/attendance', { params: _date ? { date: _date } : undefined });
-    
-    throw new Error('Connect ASP.NET Web API endpoint GET /api/attendance');
+  getAttendance: async (
+    page = 1,
+    pageSize = 10,
+    search = '',
+    date = '',
+    status = ''
+  ): Promise<GetAttendanceResponse> => {
+    return apiFetch<GetAttendanceResponse>('/Attendance/get-attendance', {
+      params: {
+        page: page.toString(),
+        pageSize: pageSize.toString(),
+        ...(search ? { search } : {}),
+        ...(date ? { date } : {}),
+        ...(status ? { status } : {}),
+      },
+    });
   },
 
-  updateAttendanceStatus: async (
-    _employeeId: number,
-    _status: AttendanceRecord['status'],
-    _date: string
-  ): Promise<AttendanceRecord> => {
-    // API Integration:
-    // return apiFetch<AttendanceRecord>('/attendance/update', {
-    //   method: 'POST',
-    //   body: JSON.stringify({ employeeId: _employeeId, status: _status, date: _date }),
-    // });
-    
-    throw new Error('Connect ASP.NET Web API endpoint POST /api/attendance/update');
-  }
+  createAttendance: async (payload: {
+    employeeId: number;
+    attendanceDate: string;
+    status: string;
+    checkIn: string;
+    checkOut: string;
+    remarks: string;
+  }): Promise<{ success: boolean; data: any; message: string; statusCode: number }> => {
+    return apiFetch('/Attendance/create-attendance', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateAttendance: async (
+    attendanceId: number,
+    payload: {
+      status: string;
+      checkIn: string;
+      checkOut: string;
+      remarks: string;
+    }
+  ): Promise<{ success: boolean; data: any; message: string; statusCode: number }> => {
+    return apiFetch(`/Attendance/update-attendence/${attendanceId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
 };

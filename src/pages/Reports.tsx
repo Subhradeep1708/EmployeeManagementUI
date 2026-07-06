@@ -1,12 +1,14 @@
 import React from 'react';
 import type { Employee } from '../types';
 import { Download, Award, FileText, BarChart3, TrendingUp, Calendar } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 interface ReportsProps {
   employees: Employee[];
 }
 
 export const Reports: React.FC<ReportsProps> = ({ employees }) => {
+  const { showToast } = useToast();
   
   // Client-side CSV Exporter helper
   const handleExportCSV = (reportType: 'directory' | 'salary' | 'performance') => {
@@ -67,6 +69,47 @@ export const Reports: React.FC<ReportsProps> = ({ employees }) => {
     window.print();
   };
 
+  const handleDownloadReport = async (endpoint: string, filename: string) => {
+    showToast('Compiling and generating report...', 'info');
+    try {
+      const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5270/api';
+      const token = localStorage.getItem('auth-token');
+      const headers: HeadersInit = {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+
+      const response = await fetch(`${BASE_URL}${endpoint}`, {
+        method: 'GET',
+        headers,
+      });
+
+      if (response.status === 401) {
+        localStorage.removeItem('auth-token');
+        localStorage.removeItem('auth-user');
+        window.location.href = '/login';
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      showToast('Report downloaded successfully!', 'success');
+    } catch (error: any) {
+      console.error('Report download error:', error);
+      showToast(error.message || 'Failed to download report.', 'error');
+    }
+  };
+
   // Mock Performance List
   const performances = employees.map((emp, idx) => {
     const score = [4.8, 4.2, 4.9, 3.8, 4.5, 3.2][idx % 6];
@@ -85,7 +128,7 @@ export const Reports: React.FC<ReportsProps> = ({ employees }) => {
   return (
     <div className="space-y-8 print:bg-white print:text-black">
       {/* Roster & Export Actions Card */}
-      <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm print:hidden transition-all duration-300 hover:border-brand-accent/40">
+      {/* <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm print:hidden transition-all duration-300 hover:border-brand-accent/40">
         <h3 className="text-base font-bold text-brand-heading mb-1">Export Directory Reports</h3>
         <p className="text-xs text-brand-text mb-6">Generate excel-compatible tables and printer-friendly summaries instantly.</p>
         
@@ -138,6 +181,56 @@ export const Reports: React.FC<ReportsProps> = ({ employees }) => {
               <div className="text-left">
                 <span className="block text-xs font-semibold">Export PDF Report</span>
                 <span className="text-[10px] text-brand-accent/85">Print full page</span>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div> */}
+
+      {/* Server Report Generation Section */}
+      <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm print:hidden transition-all duration-300 hover:border-brand-accent/40">
+        <h3 className="text-base font-bold text-brand-heading mb-1">Generate Reports</h3>
+        <p className="text-xs text-brand-text mb-6">Generate live PDF and Excel reports dynamically compiled by the backend server.</p>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Button 1: Attendance PDF */}
+          <button
+            onClick={() => handleDownloadReport('/Reports/attendance/pdf', 'attendance_report.pdf')}
+            className="flex items-center justify-between p-4 rounded-xl bg-brand-code border border-brand-border text-brand-text hover:text-brand-heading hover:bg-brand-border/40 transition-all duration-200 cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <FileText className="w-4 h-4 text-rose-500" />
+              <div className="text-left">
+                <span className="block text-xs font-semibold">Attendance Log (PDF)</span>
+                <span className="text-[10px] text-brand-text/60">Generate attendance sheet</span>
+              </div>
+            </div>
+          </button>
+
+          {/* Button 2: Employees PDF */}
+          <button
+            onClick={() => handleDownloadReport('/Reports/employees/pdf', 'employees_directory.pdf')}
+            className="flex items-center justify-between p-4 rounded-xl bg-brand-code border border-brand-border text-brand-text hover:text-brand-heading hover:bg-brand-border/40 transition-all duration-200 cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <FileText className="w-4 h-4 text-brand-accent" />
+              <div className="text-left">
+                <span className="block text-xs font-semibold">Staff Directory (PDF)</span>
+                <span className="text-[10px] text-brand-text/60">Download employee list</span>
+              </div>
+            </div>
+          </button>
+
+          {/* Button 3: Employees Excel */}
+          <button
+            onClick={() => handleDownloadReport('/Reports/employees/excel', 'employees_directory.xlsx')}
+            className="flex items-center justify-between p-4 rounded-xl bg-brand-code border border-brand-border text-brand-text hover:text-brand-heading hover:bg-brand-border/40 transition-all duration-200 cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <Download className="w-4 h-4 text-emerald-500" />
+              <div className="text-left">
+                <span className="block text-xs font-semibold">Staff Directory (Excel)</span>
+                <span className="text-[10px] text-brand-text/60">Excel spreadsheet table</span>
               </div>
             </div>
           </button>
