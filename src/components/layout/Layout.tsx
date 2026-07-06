@@ -29,12 +29,12 @@ export const Layout: React.FC = () => {
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-brand-bg text-brand-text transition-all duration-300">
       {/* Sidebar navigation */}
-      <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+      <Sidebar isCollapsed={isCollapsed} />
 
       {/* Main panel content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
-        <Header />
+        <Header isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
 
         {/* Scrollable workspace content */}
         <main className="flex-1 overflow-y-auto bg-brand-bg/50 p-8">

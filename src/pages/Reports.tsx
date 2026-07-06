@@ -85,7 +85,7 @@ export const Reports: React.FC<ReportsProps> = ({ employees }) => {
   return (
     <div className="space-y-8 print:bg-white print:text-black">
       {/* Roster & Export Actions Card */}
-      <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm print:hidden">
+      <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm print:hidden transition-all duration-300 hover:border-brand-accent/40">
         <h3 className="text-base font-bold text-brand-heading mb-1">Export Directory Reports</h3>
         <p className="text-xs text-brand-text mb-6">Generate excel-compatible tables and printer-friendly summaries instantly.</p>
         
@@ -131,7 +131,7 @@ export const Reports: React.FC<ReportsProps> = ({ employees }) => {
 
           <button
             onClick={handleExportPDF}
-            className="flex items-center justify-between p-4 rounded-xl bg-brand-accent-bg border border-brand-accent-border text-brand-accent hover:scale-[1.01] transition-all duration-200 cursor-pointer"
+            className="flex items-center justify-between p-4 rounded-xl bg-brand-accent-bg border border-brand-accent-border text-brand-accent hover:border-brand-accent transition-all duration-200 cursor-pointer"
           >
             <div className="flex items-center gap-3">
               <FileText className="w-4 h-4" />
@@ -147,7 +147,7 @@ export const Reports: React.FC<ReportsProps> = ({ employees }) => {
       {/* Analytics Visualization charts (Bonus Features) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:hidden">
         {/* Hiring Trend Bar Chart */}
-        <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex flex-col h-80">
+        <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex flex-col h-80 transition-all duration-300 hover:border-brand-accent/40">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-4 h-4 text-brand-accent" />
             <h4 className="text-xs font-semibold text-brand-heading uppercase tracking-wider">Hiring Trend Analysis</h4>
@@ -174,7 +174,7 @@ export const Reports: React.FC<ReportsProps> = ({ employees }) => {
         </div>
 
         {/* Department Growth Area Chart */}
-        <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex flex-col h-80">
+        <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex flex-col h-80 transition-all duration-300 hover:border-emerald-500/40">
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="w-4 h-4 text-emerald-500" />
             <h4 className="text-xs font-semibold text-brand-heading uppercase tracking-wider">Department Growth Tracking</h4>
@@ -215,7 +215,7 @@ export const Reports: React.FC<ReportsProps> = ({ employees }) => {
         </div>
 
         {/* Attendance Distribution Donut Chart */}
-        <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex flex-col h-80">
+        <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex flex-col h-80 transition-all duration-300 hover:border-blue-500/40">
           <div className="flex items-center gap-2 mb-4">
             <Calendar className="w-4 h-4 text-blue-500" />
             <h4 className="text-xs font-semibold text-brand-heading uppercase tracking-wider">Attendance Patterns</h4>
@@ -257,7 +257,7 @@ export const Reports: React.FC<ReportsProps> = ({ employees }) => {
       </div>
 
       {/* Performance Evaluations (Bonus Features) */}
-      <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm">
+      <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm transition-all duration-300 hover:border-brand-accent/40">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
             <Award className="w-5 h-5 text-brand-accent" />

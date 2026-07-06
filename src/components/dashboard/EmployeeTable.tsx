@@ -5,7 +5,6 @@ import { employeeService } from "../../services/employeeService";
 import { useEffect } from "react";
 
 interface EmployeeTableProps {
-  employees: Employee[];
   onDelete: (id: number) => void;
   onOpenAddModal: () => void;
 }

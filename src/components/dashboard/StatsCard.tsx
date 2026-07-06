@@ -20,23 +20,23 @@ export const StatsCard: React.FC<StatsCardProps> = ({
       case 'emerald':
         return {
           iconBg: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-          hoverBorder: 'hover:border-emerald-500/30',
+          hoverBorder: 'hover:border-emerald-500/40',
         };
       case 'blue':
         return {
           iconBg: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-          hoverBorder: 'hover:border-blue-500/30',
+          hoverBorder: 'hover:border-blue-500/40',
         };
       case 'orange':
         return {
           iconBg: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
-          hoverBorder: 'hover:border-orange-500/30',
+          hoverBorder: 'hover:border-orange-500/40',
         };
       case 'purple':
       default:
         return {
           iconBg: 'bg-brand-accent-bg text-brand-accent border-brand-accent-border',
-          hoverBorder: 'hover:border-brand-accent/30',
+          hoverBorder: 'hover:border-brand-accent/40',
         };
     }
   };
@@ -44,7 +44,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   const styles = getColorStyles();
 
   return (
-    <div className={`p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-md ${styles.hoverBorder}`}>
+    <div className={`p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm transition-all duration-300 ${styles.hoverBorder}`}>
       <div className="flex justify-between items-start">
         <div>
           <p className="text-xs font-semibold text-brand-text/75 uppercase tracking-wider">{title}</p>

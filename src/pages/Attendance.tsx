@@ -96,7 +96,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ employees }) => {
       {/* Attendance Header Summary Card grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Present Rate */}
-        <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex items-center justify-between">
+        <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex items-center justify-between transition-all duration-300 hover:border-emerald-500/40">
           <div>
             <p className="text-xs font-semibold text-brand-text/75 uppercase tracking-wider">Attendance Rate</p>
             <h3 className="text-3xl font-bold text-brand-heading mt-2">{rate}%</h3>
@@ -107,7 +107,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ employees }) => {
         </div>
 
         {/* Present Count */}
-        <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex items-center justify-between">
+        <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex items-center justify-between transition-all duration-300 hover:border-brand-accent/40">
           <div>
             <p className="text-xs font-semibold text-brand-text/75 uppercase tracking-wider">Present Today</p>
             <h3 className="text-3xl font-bold text-brand-heading mt-2">{present} / {total}</h3>
@@ -118,7 +118,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ employees }) => {
         </div>
 
         {/* Late Count */}
-        <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex items-center justify-between">
+        <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex items-center justify-between transition-all duration-300 hover:border-amber-500/40">
           <div>
             <p className="text-xs font-semibold text-brand-text/75 uppercase tracking-wider">Late Arrivals</p>
             <h3 className="text-3xl font-bold text-brand-heading mt-2">{late}</h3>
@@ -129,7 +129,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ employees }) => {
         </div>
 
         {/* On Leave Today */}
-        <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex items-center justify-between">
+        <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm flex items-center justify-between transition-all duration-300 hover:border-blue-500/40">
           <div>
             <p className="text-xs font-semibold text-brand-text/75 uppercase tracking-wider">On Approved Leave</p>
             <h3 className="text-3xl font-bold text-brand-heading mt-2">{leave}</h3>

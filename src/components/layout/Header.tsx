@@ -1,10 +1,17 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '../common/ThemeToggle';
-import { Search, Bell, HelpCircle } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, LogOut } from 'lucide-react';
+import { authService } from '../../services/authService';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  isCollapsed: boolean;
+  setIsCollapsed: (val: boolean) => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ isCollapsed, setIsCollapsed }) => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const getPageTitle = (pathname: string) => {
     switch (pathname) {
@@ -27,45 +34,49 @@ export const Header: React.FC = () => {
     }
   };
 
+  const handleLogout = () => {
+    authService.logout();
+    navigate('/login');
+  };
+
   return (
     <header className="h-16 border-b border-brand-border bg-brand-bg/85 backdrop-blur-md px-8 flex items-center justify-between sticky top-0 z-10 transition-all duration-300">
-      <div>
-        <h2 className="text-xl font-bold text-brand-heading leading-none">
-          {getPageTitle(location.pathname)}
-        </h2>
-        <p className="text-xs text-brand-text mt-1 hidden md:block">
-          Manage, analyze, and optimize your workspace.
-        </p>
+      <div className="flex items-center gap-4">
+        {/* Collapsible toggle trigger */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="p-1.5 rounded-lg text-brand-text hover:text-brand-heading hover:bg-brand-border/40 border border-brand-border/20 transition-all duration-300 cursor-pointer hidden sm:block"
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {isCollapsed ? (
+            <PanelLeftOpen className="w-4.5 h-4.5 text-brand-accent" />
+          ) : (
+            <PanelLeftClose className="w-4.5 h-4.5" />
+          )}
+        </button>
+
+        <div>
+          <h2 className="text-xl font-bold text-brand-heading leading-none">
+            {getPageTitle(location.pathname)}
+          </h2>
+          <p className="text-xs text-brand-text mt-1 hidden md:block">
+            Manage, analyze, and optimize your workspace.
+          </p>
+        </div>
       </div>
 
       <div className="flex items-center gap-6">
-        {/* Search Bar */}
-        <div className="relative w-64 hidden lg:block">
-          <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-brand-text/60">
-            <Search className="w-4 h-4" />
-          </span>
-          <input
-            type="text"
-            placeholder="Search employees, documents..."
-            className="w-full text-xs pl-10 pr-4 py-2.5 rounded-xl bg-brand-code border border-brand-border text-brand-heading focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition-all duration-200"
-          />
-        </div>
-
-        {/* Action icons */}
-        <div className="flex items-center gap-2">
-          <button className="p-2 rounded-xl text-brand-text hover:text-brand-heading hover:bg-brand-border/40 transition-all duration-200 relative cursor-pointer">
-            <Bell className="w-4 h-4" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-          </button>
-          <button className="p-2 rounded-xl text-brand-text hover:text-brand-heading hover:bg-brand-border/40 transition-all duration-200 cursor-pointer">
-            <HelpCircle className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="h-6 w-px bg-brand-border"></div>
-
         {/* Theme Switching Controller */}
         <ThemeToggle />
+
+        {/* Logout Button */}
+        <button
+          onClick={handleLogout}
+          className="p-2 rounded-xl text-brand-text hover:text-red-500 hover:bg-red-500/10 transition-all duration-200 cursor-pointer"
+          title="Log Out Session"
+        >
+          <LogOut className="w-4 h-4 shrink-0" />
+        </button>
       </div>
     </header>
   );

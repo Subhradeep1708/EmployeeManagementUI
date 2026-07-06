@@ -13,16 +13,15 @@ interface DashboardProps {
   onAdd: (newEmp: Omit<Employee, 'id' | 'joinDate'>) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ employees, onDelete, onAdd }) => {
+export const Dashboard: React.FC<DashboardProps> = ({  onDelete, onAdd }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const [summary, setSummary] = useState<DashboardSummary>({
     totalEmployees: 0,
     activePersonnel: 0,
-    totalDepartments: 0,
-    todayPresent: 0,
-    todayAbsent: 0,
-    todayLeave: 0,
+    attendence: 0,
+    averageSalary: 0,
+    annualPayroll: 0,
 
     departmentBreakdown: [],
 
@@ -96,7 +95,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ employees, onDelete, onAdd
 
         {/* Quick Analytics & Department Breakdown */}
         <div className="space-y-6">
-          <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm">
+          <div className="p-6 rounded-2xl bg-brand-bg border border-brand-border shadow-sm transition-all duration-300 hover:border-brand-accent/40">
             <h3 className="text-sm font-bold text-brand-heading uppercase tracking-wider mb-4">
               Department Breakdown
             </h3>
