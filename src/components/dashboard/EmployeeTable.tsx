@@ -1,8 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import {
+  Search,
+  SlidersHorizontal,
+  ChevronLeft,
+  ChevronRight,
+  Edit3,
+  Trash2,
+  UserPlus,
+  Loader2,
+} from 'lucide-react';
+import { employeeService } from '../../services/employeeService';
 import type { Employee } from '../../types';
-import { Search, Filter, Trash2, Edit3, UserPlus, SlidersHorizontal } from 'lucide-react';
-import { employeeService } from "../../services/employeeService";
-import { useEffect } from "react";
+import { useToast } from '../../context/ToastContext';
+import { getAvatarFallback } from '../../utils/helpers';
 
 interface EmployeeTableProps {
   onDelete: (id: number) => void;
@@ -19,8 +29,11 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
   showAddButton = true,
   refreshTrigger,
 }) => {
-  const [selectedDept, setSelectedDept] = useState(0);
+  const { showToast } = useToast();
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const [selectedDept, setSelectedDept] = useState(0);
   const [selectedStatus, setSelectedStatus] = useState(0);
 
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -29,7 +42,6 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
   const [totalRecords, setTotalRecords] = useState(0);
 
   const [searchInput, setSearchInput] = useState("");
-
   const [searchTerm, setSearchTerm] = useState("");
 
   const departments = [
@@ -47,8 +59,6 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
     { id: 4, name: "Terminated" }
   ];
 
-
-
   const getStatusBadge = (status: Employee['status']) => {
     switch (status) {
       case 'Active':
@@ -56,13 +66,14 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
       case 'On Leave':
         return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20';
       case 'Terminated':
-        return 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20';
+        return 'bg-rose-500/10 text-rose-600 dark:text-rose-450 border border-rose-500/20';
       default:
         return 'bg-brand-code/80 text-brand-text';
     }
   };
 
-  const formatSalary = (salaryStr: string) => {
+  const formatSalary = (salary: number | string) => {
+    const salaryStr = String(salary);
     const num = Number(salaryStr.replace(/[^0-9.]/g, ''));
     if (isNaN(num)) return salaryStr;
     return new Intl.NumberFormat('en-US', {
@@ -72,124 +83,130 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
     }).format(num);
   };
 
-
-
   useEffect(() => {
-
     const timer = setTimeout(() => {
       setSearchTerm(searchInput);
-    }, 100);
-
+      setPage(1);
+    }, 400);
     return () => clearTimeout(timer);
-
   }, [searchInput]);
 
-  useEffect(() => {
   const loadEmployees = async () => {
     try {
-
       const response = await employeeService.getEmployees(
         page,
         5,
         searchTerm,
         selectedDept === 0 ? undefined : selectedDept,
         selectedStatus === 0 ? undefined : selectedStatus
-      );
+      ) as any;
 
-      console.log(response.data);
-      
-      setEmployees(response.data.items);
-      setTotalPages(response.data.totalPages);
-      setTotalRecords(response.data.totalRecords);
-
+      setEmployees(response.data.items || []);
+      setTotalPages(response.data.totalPages || 1);
+      setTotalRecords(response.data.totalRecords || 0);
     }
     catch (err) {
       console.error(err);
     }
   };
 
-    loadEmployees();
-  }, [page,
-    searchTerm,
-    selectedDept,
-    selectedStatus,
-    refreshTrigger]);
+  useEffect(() => {
+    void loadEmployees();
+  }, [page, searchTerm, selectedDept, selectedStatus, refreshTrigger]);
+
+  const handleConfirmDelete = async () => {
+    if (!deletingId) return;
+    setDeleteLoading(true);
+    try {
+      const res = await employeeService.deleteEmployee(deletingId);
+      if (res.success) {
+        showToast(res.message || 'Employee record deleted successfully.', 'success');
+        setDeletingId(null);
+        void loadEmployees();
+        if (onDelete) {
+          onDelete(deletingId);
+        }
+      } else {
+        showToast(res.message || 'Failed to delete employee.', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'An error occurred while deleting employee.', 'error');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   return (
     <div className="bg-brand-bg border border-brand-border rounded-2xl shadow-sm overflow-hidden transition-all duration-300">
       {/* Table Toolbar */}
       <div className="p-6 border-b border-brand-border flex flex-col md:flex-row md:items-center justify-between gap-4 bg-brand-code/10">
-        <div className="flex flex-1 items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
           {/* Local Search */}
-          <div className="relative w-full max-w-sm">
+          <div className="relative w-full max-w-xs">
             <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-brand-text/60">
-              <Search className="w-4 h-4" />
+              <Search className="w-4.5 h-4.5" />
             </span>
             <input
               type="text"
-              placeholder="Search employees name, role..."
-              value={searchTerm}
+              placeholder="Search employee name..."
+              value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full text-xs pl-10 pr-4 py-2.5 rounded-xl bg-brand-bg border border-brand-border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200"
+              className="w-full text-xs pl-9 pr-4 py-2.5 rounded-xl bg-brand-bg border border-brand-border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200"
             />
           </div>
 
           {/* Department Filter */}
-          <div className="relative">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-brand-text font-medium whitespace-nowrap">Dept:</span>
             <select
               value={selectedDept}
-              onChange={(e) => setSelectedDept(Number(e.target.value))}
-              className="text-xs pl-3 pr-8 py-2.5 rounded-xl bg-brand-bg border border-brand-border text-brand-heading focus:outline-none focus:border-brand-accent transition-all duration-200 cursor-pointer appearance-none min-w-[140px]"
-
+              onChange={(e) => {
+                setPage(1);
+                setSelectedDept(Number(e.target.value));
+              }}
+              className="text-xs px-3 py-2.5 rounded-xl bg-brand-bg border border-brand-border text-brand-heading focus:outline-none cursor-pointer"
             >
-              {departments.map((dept) =>
-                <option
-                  key={dept.id}
-                  value={dept.id}
-                >
+              {departments.map((dept) => (
+                <option key={dept.id} value={dept.id}>
                   {dept.name}
                 </option>
-              )}
+              ))}
             </select>
-            <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-brand-text/60">
-              <Filter className="w-3 h-3" />
-            </span>
-          </div>
-        </div>
-
-        {/* Action Controls */}
-        <div className="flex items-center gap-3">
-          {/* Status Tabs */}
-          <div className="flex bg-brand-code/50 border border-brand-border p-1 rounded-xl">
-            {statuses.map((status) => (
-              <button
-                key={status.id}
-                onClick={() => setSelectedStatus(status.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
-                  selectedStatus === status.id
-                    ? 'bg-brand-bg text-brand-accent shadow-sm'
-                    : 'text-brand-text hover:text-brand-heading'
-                }`}
-              >
-                {status.name}
-              </button>
-            ))}
           </div>
 
-          {/* Add Employee Button */}
-          {showAddButton && (
-            <button
-              onClick={onOpenAddModal}
-              className="flex items-center gap-2 px-4 py-2.5 bg-brand-accent text-white rounded-xl text-xs font-semibold shadow-md shadow-brand-accent/25 transition-all duration-200 cursor-pointer"
+          {/* Status Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-brand-text font-medium whitespace-nowrap">Status:</span>
+            <select
+              value={selectedStatus}
+              onChange={(e) => {
+                setPage(1);
+                setSelectedStatus(Number(e.target.value));
+              }}
+              className="text-xs px-3 py-2.5 rounded-xl bg-brand-bg border border-brand-border text-brand-heading focus:outline-none cursor-pointer"
             >
-              <UserPlus className="w-4 h-4" />
-              <span>Add Employee</span>
-            </button>
-          )}
+              {statuses.map((stat) => (
+                <option key={stat.id} value={stat.id}>
+                  {stat.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
+
+        {/* Conditional Add Button */}
+        {showAddButton && (
+          <button
+            onClick={onOpenAddModal}
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-brand-accent hover:bg-brand-accent/90 text-white rounded-xl text-xs font-semibold shadow-md shadow-brand-accent/25 transition-all duration-200 cursor-pointer"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Add Employee</span>
+          </button>
+        )}
       </div>
 
-      {/* Main Table Grid */}
+      {/* Table Layout */}
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -197,7 +214,7 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
               <th className="px-6 py-4 text-xs font-bold text-brand-heading uppercase tracking-wider">Employee</th>
               <th className="px-6 py-4 text-xs font-bold text-brand-heading uppercase tracking-wider">Department</th>
               <th className="px-6 py-4 text-xs font-bold text-brand-heading uppercase tracking-wider">Role</th>
-              <th className="px-6 py-4 text-xs font-bold text-brand-heading uppercase tracking-wider">Annual Salary</th>
+              <th className="px-6 py-4 text-xs font-bold text-brand-heading uppercase tracking-wider">Salary</th>
               <th className="px-6 py-4 text-xs font-bold text-brand-heading uppercase tracking-wider">Status</th>
               <th className="px-6 py-4 text-xs font-bold text-brand-heading uppercase tracking-wider text-right">Actions</th>
             </tr>
@@ -205,26 +222,21 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
           <tbody className="divide-y divide-brand-border">
             {employees.length > 0 ? (
               employees.map((emp) => (
-                <tr
-                  key={emp.employeeId}
-                  className="hover:bg-brand-code/20 transition-colors duration-150 text-sm group"
-                >
+                <tr key={emp.employeeId} className="hover:bg-brand-code/10 transition-colors text-sm">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center font-bold text-brand-accent text-sm">
-                        {emp.fullName.split(' ').map((n) => n[0]).join('')}
+                      <div className="w-10 h-10 rounded-full bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center font-bold text-brand-accent shrink-0">
+                        {getAvatarFallback(emp.fullName)}
                       </div>
                       <div>
-                        <h4 className="font-semibold text-brand-heading group-hover:text-brand-accent transition-colors duration-150">
-                          {emp.fullName}
-                        </h4>
+                        <h4 className="font-semibold text-brand-heading">{emp.fullName}</h4>
                         <p className="text-xs text-brand-text">{emp.email}</p>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-brand-text font-medium">{emp.department}</td>
                   <td className="px-6 py-4 text-brand-text font-medium">{emp.designation}</td>
-                  <td className="px-6 py-4 text-brand-heading font-semibold">{emp.salary}</td>
+                  <td className="px-6 py-4 text-brand-heading font-semibold">{formatSalary(emp.salary)}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusBadge(emp.status)}`}>
                       {emp.status}
@@ -241,7 +253,7 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
                       </button>
                       <button
                         title="Delete Employee"
-                        onClick={() => onDelete(emp.employeeId  )}
+                        onClick={() => setDeletingId(emp.employeeId)}
                         className="p-1.5 rounded-lg text-brand-text hover:text-red-500 hover:bg-red-500/10 transition-all duration-150 cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -264,35 +276,75 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
         </table>
       </div>
 
-      {/* Footer statistics */}
-      <div className="p-4 border-t border-brand-border flex items-center justify-between text-xs text-brand-text bg-brand-code/10">
-        <span>Showing {employees.length} of {totalRecords} employees</span>
-        <span className="font-medium">Total payroll: {formatSalary(String(employees.reduce((acc, emp) => acc + Number(emp.salary), 0)))}</span>
-      </div>
-
-      <div className="flex items-center justify-end gap-4 p-4">
-
-        <button
-          disabled={page === 1}
-          onClick={() => setPage(page - 1)}
-          className="px-4 py-2 rounded border"
-        >
-          Previous
-        </button>
-
-        <span>
-          {page} / {totalPages}
+      {/* Pagination Footer */}
+      <div className="p-4 border-t border-brand-border flex flex-col sm:flex-row items-center justify-between gap-4 bg-brand-code/10">
+        <span className="text-xs text-brand-text">
+          Showing {employees.length} of {totalRecords} records
         </span>
-
-        <button
-          disabled={page === totalPages}
-          onClick={() => setPage(page + 1)}
-          className="px-4 py-2 rounded border"
-        >
-          Next
-        </button>
-
+        
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+            disabled={page === 1}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-brand-border text-xs font-semibold text-brand-text hover:bg-brand-border/40 disabled:opacity-40 transition-all cursor-pointer"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span>Previous</span>
+          </button>
+          
+          <span className="text-xs font-bold text-brand-heading">
+            {page} / {totalPages}
+          </span>
+          
+          <button
+            onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={page === totalPages}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-brand-border text-xs font-semibold text-brand-text hover:bg-brand-border/40 disabled:opacity-40 transition-all cursor-pointer"
+          >
+            <span>Next</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {deletingId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="w-full max-w-md bg-brand-bg border border-brand-border rounded-2xl shadow-xl overflow-hidden p-6 space-y-4 animate-slide-in">
+            <h3 className="text-base font-bold text-brand-heading">Delete Employee Record</h3>
+            <p className="text-xs text-brand-text leading-relaxed">
+              Are you sure you want to permanently delete this employee? This action cannot be undone and will erase all payroll history and attendance records.
+            </p>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                disabled={deleteLoading}
+                onClick={() => setDeletingId(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-brand-text hover:text-brand-heading hover:bg-brand-border/40 transition-all duration-200 cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteLoading}
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white shadow-md shadow-rose-600/20 transition-all duration-200 cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {deleteLoading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <span>Delete Record</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+export default EmployeeTable;

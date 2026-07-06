@@ -24,7 +24,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
 
   return (
     <aside
-      className={`bg-brand-bg border-r border-brand-border flex flex-col h-full transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'
+      className={`bg-brand-sidebar-bg border-r border-brand-border flex flex-col h-full transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'
         }`}
     >
       {/* Brand Logo Header */}

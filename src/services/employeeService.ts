@@ -39,11 +39,10 @@ export const employeeService = {
     });
   },
 
-  deleteEmployee: async (_id: number): Promise<void> => {
-    // API Integration:
-    // return apiFetch<void>(`/employees/${_id}`, { method: 'DELETE' });
-    
-    throw new Error(`Connect ASP.NET Web API endpoint DELETE /api/employees/${_id}`);
+  deleteEmployee: async (id: number): Promise<{ success: boolean; data: any; message: string; statusCode: number }> => {
+    return apiFetch(`/Employees/delete-employee/${id}`, {
+      method: 'DELETE',
+    });
   },
 
   deleteMultipleEmployees: async (_ids: number[]): Promise<void> => {

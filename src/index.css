@@ -5,6 +5,7 @@
   --color-brand-text: var(--text);
   --color-brand-heading: var(--text-h);
   --color-brand-bg: var(--bg);
+  --color-brand-sidebar-bg: var(--sidebar-bg);
   --color-brand-border: var(--border);
   --color-brand-code: var(--code-bg);
   --color-brand-accent: var(--accent);
@@ -24,6 +25,7 @@
   --text: #5f5968;
   --text-h: #0b0914;
   --bg: #faf9f6; /* Off-white warm background */
+  --sidebar-bg: #ffffff; /* Pure white distinct sidebar background */
   --border: #e6e4df;
   --code-bg: #f2efe9;
   --accent: #7c3aed; /* Violet accent */
@@ -37,6 +39,7 @@
   --text: #9ca3af;
   --text-h: #f3f4f6;
   --bg: #0b0c10; /* Sleek pure dark background */
+  --sidebar-bg: #12131c; /* Distinct charcoal dark sidebar background */
   --border: #1f222e;
   --code-bg: #161822;
   --accent: #a78bfa; /* Violet light accent */

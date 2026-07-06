@@ -40,7 +40,7 @@ export const Header: React.FC<HeaderProps> = ({ isCollapsed, setIsCollapsed }) =
   };
 
   return (
-    <header className="h-16 border-b border-brand-border bg-brand-bg/85 backdrop-blur-md px-8 flex items-center justify-between sticky top-0 z-10 transition-all duration-300">
+    <header className="h-16 border-b border-brand-border bg-brand-sidebar-bg/85 backdrop-blur-md px-8 flex items-center justify-between sticky top-0 z-10 transition-all duration-300">
       <div className="flex items-center gap-4">
         {/* Collapsible toggle trigger */}
         <button
