@@ -57,7 +57,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
         </div>
       </div>
 
-      {trend && (
+      {/* {trend && (
         <div className="mt-4 flex items-center gap-1.5 text-xs font-medium">
           <span
             className={`px-2 py-0.5 rounded-full ${
@@ -72,7 +72,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
           </span>
           <span className="text-brand-text/60">vs last month</span>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

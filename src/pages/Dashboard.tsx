@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatsCard } from '../components/dashboard/StatsCard';
 import { EmployeeTable } from '../components/dashboard/EmployeeTable';
 import { AddEmployeeModal } from '../components/common/AddEmployeeModal';
 import type { Employee } from '../types';
-import { Users, DollarSign, Briefcase, Award, ShieldAlert } from 'lucide-react';
+import { Users, DollarSign, Briefcase, Award } from 'lucide-react';
+import { dashboardService, type DashboardSummary } from '../services/dashboardService';
+
 
 interface DashboardProps {
   employees: Employee[];
@@ -14,9 +16,33 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ employees, onDelete, onAdd }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  const activeCount = employees.filter((e) => e.status === 'Active').length;
-  const totalSalary = employees.reduce((sum, e) => sum + Number(e.salary), 0);
-  const averageSalary = employees.length > 0 ? Math.round(totalSalary / employees.length) : 0;
+  const [summary, setSummary] = useState<DashboardSummary>({
+    totalEmployees: 0,
+    activePersonnel: 0,
+    totalDepartments: 0,
+    todayPresent: 0,
+    todayAbsent: 0,
+    todayLeave: 0,
+
+    departmentBreakdown: [],
+
+  });
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const response = await dashboardService.getSummary();
+        setSummary(response.data);
+        console.log(response.data);
+
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    void loadDashboard();
+  }, []);
+
 
   return (
     <div className="space-y-8">
@@ -24,31 +50,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ employees, onDelete, onAdd
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           title="Total Employees"
-          value={employees.length}
+          value={summary.totalEmployees}
           icon={<Users className="w-6 h-6" />}
-          trend="+8% from last quarter"
-          trendType="positive"
           color="purple"
         />
         <StatsCard
           title="Active Personnel"
-          value={activeCount}
+          value={summary.activePersonnel}
           icon={<Briefcase className="w-6 h-6" />}
-          trend="+3% new hires"
-          trendType="positive"
           color="blue"
         />
         <StatsCard
           title="Annual Payroll"
-          value={`$${(totalSalary / 1000).toFixed(0)}k`}
+          // value={`$${(totalSalary / 1000).toFixed(0)}k`}
+          value={summary.annualPayroll}
           icon={<DollarSign className="w-6 h-6" />}
-          trend="-2.4% adjustments"
-          trendType="negative"
           color="emerald"
         />
         <StatsCard
           title="Average Salary"
-          value={`$${(averageSalary / 1000).toFixed(0)}k`}
+          // value={`$${(averageSalary / 1000).toFixed(0)}k`}
+          value={summary.averageSalary}
           icon={<Award className="w-6 h-6" />}
           trend="Stable"
           trendType="neutral"
@@ -80,14 +102,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ employees, onDelete, onAdd
               Department Breakdown
             </h3>
             <div className="space-y-4">
-              {['Engineering', 'Design', 'Product', 'Marketing', 'Human Resources'].map((dept) => {
-                const count = employees.filter((e) => e.department === dept).length;
-                const percentage = employees.length > 0 ? (count / employees.length) * 100 : 0;
+              {summary.departmentBreakdown.map((dept) => {
+                const percentage =
+                  summary.totalEmployees === 0
+                    ? 0
+                    : (dept.employeeCount / summary.totalEmployees) * 100;
                 return (
-                  <div key={dept} className="space-y-1.5">
+                  <div key={dept.departmentName} className="space-y-1.5">
                     <div className="flex justify-between text-xs font-medium">
-                      <span className="text-brand-heading">{dept}</span>
-                      <span className="text-brand-text">{count} ({Math.round(percentage)}%)</span>
+                      <span className="text-brand-heading">{dept.departmentName}</span>
+                      <span className="text-brand-text">{dept.employeeCount} ({Math.round(percentage)}%)</span>
                     </div>
                     <div className="h-2 w-full bg-brand-code rounded-full overflow-hidden">
                       <div
@@ -101,21 +125,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ employees, onDelete, onAdd
             </div>
           </div>
 
-          {/* Quick Notice Banner */}
-          <div className="p-6 rounded-2xl bg-brand-accent-bg border border-brand-accent-border relative overflow-hidden group">
-            <div className="absolute -right-8 -bottom-8 w-24 h-24 bg-brand-accent/5 rounded-full border border-brand-accent-border/30 group-hover:scale-125 transition-transform duration-500"></div>
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-brand-accent flex items-center justify-center text-white shrink-0 shadow-md">
-                <ShieldAlert className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-brand-heading">Security Compliance Check</h4>
-                <p className="text-xs text-brand-text/90 mt-1 leading-relaxed">
-                  The quarterly security audit begins next Monday. Please ensure all employee portal logs are cleared and role assignments verified.
-                </p>
-              </div>
-            </div>
-          </div>
+
         </div>
       </div>
 

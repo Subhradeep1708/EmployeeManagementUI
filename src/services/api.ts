@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5270/api';
 
 interface RequestOptions extends RequestInit {
   params?: Record<string, string>;
@@ -52,7 +52,7 @@ export const apiFetch = async <T>(endpoint: string, options: RequestOptions = {}
     }
 
     return await response.json();
-  } catch (error: any) {
+  } catch (error) {
     console.error(`API Fetch Error [${options.method || 'GET'} ${endpoint}]:`, error);
     throw error;
   }
